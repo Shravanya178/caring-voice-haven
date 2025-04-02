@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -25,13 +24,13 @@ const HomeScreen = () => {
     },
     {
       title: 'Memory Games',
-      icon: <Ionicons name="brain" size={40} color={colors.primary} />,
+      icon: <MaterialCommunityIcons name="brain" size={40} color={colors.primary} />,
       screen: 'Games',
       description: 'Keep your mind active',
     },
     {
       title: 'Find Pharmacy',
-      icon: <MaterialCommunityIcons name="pharmacy" size={40} color={colors.primary} />,
+      icon: <MaterialCommunityIcons name="store" size={40} color={colors.primary} />,
       screen: 'Pharmacy',
       description: 'Locate nearby pharmacies',
     },
