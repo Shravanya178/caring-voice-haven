@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Video, Calendar, Clock, User, Phone, VideoOff, Mic, MicOff, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -16,8 +15,9 @@ interface Doctor {
 }
 
 interface Appointment {
-  id: string;
+  _id?: string;
   doctorId: string;
+  doctorName: string;
   date: string;
   time: string;
   status: 'scheduled' | 'completed' | 'cancelled';
@@ -52,30 +52,7 @@ const TelemedicineConsult = () => {
     },
   ]);
 
-  const [appointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      doctorId: '1',
-      date: 'April 15, 2023',
-      time: '10:00 AM',
-      status: 'scheduled',
-    },
-    {
-      id: '2',
-      doctorId: '3',
-      date: 'April 20, 2023',
-      time: '2:30 PM',
-      status: 'scheduled',
-    },
-    {
-      id: '3',
-      doctorId: '4',
-      date: 'March 28, 2023',
-      time: '11:15 AM',
-      status: 'completed',
-    },
-  ]);
-
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null);
   const [appointmentDate, setAppointmentDate] = useState<string>('');
   const [appointmentTime, setAppointmentTime] = useState<string>('');
@@ -83,7 +60,26 @@ const TelemedicineConsult = () => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
 
-  const handleScheduleAppointment = () => {
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/appointments');
+      const data = await response.json();
+      setAppointments(data);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch appointments",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScheduleAppointment = async () => {
     if (!selectedDoctor || !appointmentDate || !appointmentTime) {
       toast({
         title: "Missing Information",
@@ -95,15 +91,45 @@ const TelemedicineConsult = () => {
 
     const doctor = doctors.find(d => d.id === selectedDoctor);
     
-    toast({
-      title: "Appointment Scheduled",
-      description: `Your appointment with ${doctor?.name} on ${appointmentDate} at ${appointmentTime} has been confirmed.`,
-    });
+    try {
+      const response = await fetch('http://localhost:5000/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          doctorId: selectedDoctor,
+          doctorName: doctor?.name || '',
+          date: appointmentDate,
+          time: appointmentTime,
+          status: 'scheduled',
+        }),
+      });
 
-    // Reset form
-    setSelectedDoctor(null);
-    setAppointmentDate('');
-    setAppointmentTime('');
+      if (!response.ok) {
+        throw new Error('Failed to schedule appointment');
+      }
+
+      const newAppointment = await response.json();
+      setAppointments(prev => [newAppointment, ...prev]);
+
+      toast({
+        title: "Appointment Scheduled",
+        description: `Your appointment with ${doctor?.name} on ${appointmentDate} at ${appointmentTime} has been confirmed.`,
+      });
+
+      // Reset form
+      setSelectedDoctor(null);
+      setAppointmentDate('');
+      setAppointmentTime('');
+    } catch (error) {
+      console.error('Error scheduling appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to schedule appointment",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleJoinCall = (appointment: Appointment) => {
@@ -115,6 +141,33 @@ const TelemedicineConsult = () => {
     });
     
     setInCall(true);
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/${appointmentId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete appointment');
+      }
+
+      // Remove the appointment from the state
+      setAppointments(prev => prev.filter(app => app._id !== appointmentId));
+
+      toast({
+        title: "Appointment Cancelled",
+        description: "Your appointment has been cancelled successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEndCall = () => {
@@ -319,32 +372,37 @@ const TelemedicineConsult = () => {
           ) : (
             <div className="space-y-4">
               {appointments
-                .filter(a => a.status === 'scheduled')
+                .filter(appointment => appointment.status === 'scheduled')
                 .map(appointment => {
                   const doctor = doctors.find(d => d.id === appointment.doctorId);
                   return (
-                    <Card key={appointment.id}>
+                    <Card key={appointment._id}>
                       <CardHeader className="pb-2">
-                        <div className="flex justify-between">
-                          <CardTitle className="text-lg">{doctor?.name}</CardTitle>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            className="h-7 rounded-full px-2"
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <CardTitle className="text-lg">{appointment.doctorName}</CardTitle>
+                            <CardDescription>{doctor?.specialty}</CardDescription>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 hover:bg-red-100 hover:text-red-600"
+                            onClick={() => appointment._id && handleDeleteAppointment(appointment._id)}
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
-                        <CardDescription>{doctor?.specialty}</CardDescription>
                       </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="flex items-center text-sm text-gray-500 mb-1">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {appointment.date}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Clock className="h-4 w-4 mr-2" />
-                          {appointment.time}
+                      <CardContent>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{appointment.date}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{appointment.time}</span>
+                          </div>
                         </div>
                       </CardContent>
                       <CardFooter>
@@ -371,7 +429,7 @@ const TelemedicineConsult = () => {
                   .map(appointment => {
                     const doctor = doctors.find(d => d.id === appointment.doctorId);
                     return (
-                      <Card key={appointment.id} className="bg-gray-50">
+                      <Card key={appointment._id} className="bg-gray-50">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base">{doctor?.name}</CardTitle>
                           <CardDescription className="text-xs">{doctor?.specialty}</CardDescription>
