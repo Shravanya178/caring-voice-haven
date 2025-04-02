@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingBottom: 80, // Make room for the SOS button
+    paddingBottom: 80,
   },
   featureCard: {
     width: '48%',

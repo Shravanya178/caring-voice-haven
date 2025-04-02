@@ -9,7 +9,12 @@ import Dashboard from "./components/Dashboard";
 import MedicationTracker from "./components/MedicationTracker";
 import MemoryGame from "./components/MemoryGame";
 import EmergencyContacts from "./components/EmergencyContacts";
+import PharmacyFinder from "./components/PharmacyFinder";
+import AIAssistant from "./components/AIAssistant";
+import MentalHealth from "./components/MentalHealth";
+import TelemedicineConsult from "./components/TelemedicineConsult";
 import NotFound from "./pages/NotFound";
+import SocialClub from "./components/SocialClub";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +30,12 @@ const App = () => (
             <Route path="/medications" element={<MedicationTracker />} />
             <Route path="/games" element={<MemoryGame />} />
             <Route path="/emergency" element={<EmergencyContacts />} />
+            <Route path="/pharmacy" element={<PharmacyFinder />} />
+            <Route path="/chatbot" element={<AIAssistant />} />
+            <Route path="/mentalhealth" element={<MentalHealth />} />
+            <Route path="/telemedicine" element={<TelemedicineConsult />} />
+            <Route path="/social" element={<SocialClub />} />
+            <Route path="/appointments" element={<TelemedicineConsult />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

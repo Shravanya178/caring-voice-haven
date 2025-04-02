@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Pill, Brain, Phone, Mic } from 'lucide-react';
+import { Home, Pill, Brain, Phone, Mic, MapPin, MessageSquare, Video, Users, Heart } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
 
@@ -20,6 +20,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { path: '/medications', label: 'Medications', icon: <Pill className="h-7 w-7" /> },
     { path: '/games', label: 'Games', icon: <Brain className="h-7 w-7" /> },
     { path: '/emergency', label: 'Emergency', icon: <Phone className="h-7 w-7" /> },
+    { path: '/pharmacy', label: 'Pharmacy', icon: <MapPin className="h-7 w-7" /> },
+    { path: '/chatbot', label: 'AI Assistant', icon: <MessageSquare className="h-7 w-7" /> },
+    { path: '/telemedicine', label: 'Video Call', icon: <Video className="h-7 w-7" /> },
+    { path: '/social', label: 'Social Club', icon: <Users className="h-7 w-7" /> },
+    { path: '/mentalhealth', label: 'Mental Health', icon: <Heart className="h-7 w-7" /> },
   ];
 
   const handleVoiceAssistant = () => {
