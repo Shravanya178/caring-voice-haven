@@ -1,11 +1,20 @@
 
 import React, { useState } from 'react';
-import { Users, Calendar, Video, MessageSquare, User } from 'lucide-react';
+import { Users, Calendar, Video, MessageSquare, User, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Input } from './ui/input';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 interface Event {
   id: string;
@@ -24,8 +33,19 @@ interface CommunityMember {
   online: boolean;
 }
 
+interface Message {
+  id: string;
+  sender: string;
+  text: string;
+  time: string;
+  isUser: boolean;
+}
+
 const SocialClub = () => {
   const { toast } = useToast();
+  const [messageInput, setMessageInput] = useState('');
+  const [activeTab, setActiveTab] = useState('events');
+  
   const [events] = useState<Event[]>([
     {
       id: '1',
@@ -83,6 +103,37 @@ const SocialClub = () => {
       online: false
     }
   ]);
+  
+  const [messages] = useState<Message[]>([
+    {
+      id: '1',
+      sender: 'John Smith',
+      text: 'Hello everyone! How is everyone doing today?',
+      time: '10:15 AM',
+      isUser: false
+    },
+    {
+      id: '2',
+      sender: 'Mary Johnson',
+      text: 'I\'m doing great, thanks for asking! Looking forward to the bingo night tomorrow.',
+      time: '10:18 AM',
+      isUser: false
+    },
+    {
+      id: '3',
+      sender: 'You',
+      text: 'I\'m excited for bingo night too! Does anyone know if we need to prepare anything?',
+      time: '10:22 AM',
+      isUser: true
+    },
+    {
+      id: '4',
+      sender: 'Robert Davis',
+      text: 'Just bring your enthusiasm! Everything else will be provided by the host.',
+      time: '10:25 AM',
+      isUser: false
+    }
+  ]);
 
   const handleJoinEvent = (event: Event) => {
     toast({
@@ -104,6 +155,16 @@ const SocialClub = () => {
       description: `Starting a conversation with ${member.name}`,
     });
   };
+  
+  const handleSendMessage = () => {
+    if (messageInput.trim()) {
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent to the group chat",
+      });
+      setMessageInput('');
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-6 md:ml-64 animate-fade-in">
@@ -112,10 +173,11 @@ const SocialClub = () => {
         <h1 className="text-3xl font-bold">Virtual Social Club</h1>
       </div>
 
-      <Tabs defaultValue="events" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+      <Tabs defaultValue="events" className="w-full mb-6" onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="events" className="text-lg">Upcoming Events</TabsTrigger>
           <TabsTrigger value="community" className="text-lg">Community Members</TabsTrigger>
+          <TabsTrigger value="chat" className="text-lg">Group Chat</TabsTrigger>
         </TabsList>
         
         <TabsContent value="events" className="space-y-4">
@@ -208,7 +270,83 @@ const SocialClub = () => {
             </Card>
           ))}
         </TabsContent>
+        
+        <TabsContent value="chat" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Community Group Chat</CardTitle>
+              <CardDescription>Connect with other community members</CardDescription>
+            </CardHeader>
+            <CardContent className="max-h-96 overflow-y-auto space-y-4">
+              {messages.map((message) => (
+                <div 
+                  key={message.id} 
+                  className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div 
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.isUser 
+                        ? 'bg-care-primary text-white' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {!message.isUser && (
+                      <div className="font-semibold mb-1">{message.sender}</div>
+                    )}
+                    <div>{message.text}</div>
+                    <div className={`text-xs mt-1 text-right ${message.isUser ? 'text-gray-200' : 'text-gray-500'}`}>
+                      {message.time}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+            <CardFooter>
+              <div className="flex w-full gap-2">
+                <Input 
+                  placeholder="Type a message..." 
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  className="flex-grow"
+                />
+                <Button onClick={handleSendMessage} className="bg-care-primary hover:bg-care-secondary">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </TabsContent>
       </Tabs>
+      
+      {/* Upcoming community events sheet */}
+      {activeTab !== 'events' && (
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button 
+              className="fixed right-20 bottom-20 md:bottom-24 h-14 w-14 rounded-full bg-care-tertiary hover:bg-care-secondary shadow-lg"
+            >
+              <Calendar className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Upcoming Events</SheetTitle>
+              <SheetDescription>Quick view of all upcoming community events</SheetDescription>
+            </SheetHeader>
+            <div className="mt-6 space-y-4">
+              {events.map(event => (
+                <div key={event.id} className="border-b pb-3">
+                  <h3 className="font-semibold">{event.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    <Calendar className="h-3 w-3 inline mr-1" />
+                    {event.date} at {event.time}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 };
