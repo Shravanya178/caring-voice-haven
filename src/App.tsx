@@ -15,6 +15,7 @@ import MentalHealth from "./components/MentalHealth";
 import TelemedicineConsult from "./components/TelemedicineConsult";
 import NotFound from "./pages/NotFound";
 import SocialClub from "./components/SocialClub";
+import AIHealth from "./components/AIHealth";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/telemedicine" element={<TelemedicineConsult />} />
             <Route path="/social" element={<SocialClub />} />
             <Route path="/appointments" element={<TelemedicineConsult />} />
+            <Route path="/aihealth" element={<AIHealth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
