@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Users, Calendar, Video, MessageSquare, User, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -166,6 +165,24 @@ const SocialClub = () => {
     }
   };
 
+  // New function to handle joining a virtual meeting room using Jitsi
+  const handleJoinVirtualRoom = (event: Event) => {
+    // Create a room name based on the event title (remove spaces and special characters)
+    const roomName = event.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    
+    // Create a Jitsi Meet URL with the room name
+    const jitsiUrl = `https://meet.jit.si/${roomName}`;
+    
+    // Show toast notification
+    toast({
+      title: "Joining Virtual Room",
+      description: `Opening ${event.title} meeting room...`,
+    });
+    
+    // Redirect to the Jitsi Meet URL in a new tab
+    window.open(jitsiUrl, '_blank');
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 md:ml-64 animate-fade-in">
       <div className="flex items-center mb-6">
@@ -208,7 +225,11 @@ const SocialClub = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => handleJoinVirtualRoom(event)}
+                >
                   <Video className="h-4 w-4 mr-2" />
                   Enter Virtual Room
                 </Button>

@@ -301,8 +301,8 @@ const GamesCollection = () => {
   }, []);
 
   return (
-    <div className="space-y-6 mt-4 md:ml-16">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="flex justify-center items-center mb-6">
         <h1 className="text-3xl font-bold">Game Center</h1>
       </div>
       
