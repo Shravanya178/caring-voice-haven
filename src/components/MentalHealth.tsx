@@ -791,37 +791,36 @@ const MentalHealth = () => {
         <h1 className="text-3xl font-bold">Mental Health Support</h1>
       </div>
 
-        {!assessmentComplete ? (
-          <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
-            <CardHeader>
-              <CardTitle>Mental Wellness Assessment</CardTitle>
-              <CardDescription>
-                Answer a few questions to help us understand how you're feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.
-              </CardDescription>
-              <Progress value={(currentAssessment / filteredAssessments.length) * 100} className="mt-2" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">
-                  Question {currentAssessment + 1} of {assessments.length}
-                </h3>
-                <p className="text-base">{assessments[currentAssessment].question}</p>
-                <div className="space-y-2">
-                  {assessments[currentAssessment].options.map((option, index) => (
-                    <Button
-                      key={index}
-                      variant={answers[currentAssessment] === option.value ? "default" : "outline"}
-                      className="w-full justify-start h-auto py-3 px-4 mb-2"
-                      onClick={() => handleAnswerSelect(option.value)}
-                    >
-                      {option.text}
-                    </Button>
-                  ))}
-                </div>
+      {!assessmentComplete ? (
+        <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
+          <CardHeader>
+            <CardTitle>Mental Wellness Assessment</CardTitle>
+            <CardDescription>
+              Answer a few questions to help us understand how you're feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.
+            </CardDescription>
+            <Progress value={(currentAssessment / filteredAssessments.length) * 100} className="mt-2" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium">
+                Question {currentAssessment + 1} of {assessments.length}
+              </h3>
+              <p className="text-base">{assessments[currentAssessment].question}</p>
+              <div className="space-y-2">
+                {assessments[currentAssessment].options.map((option, index) => (
+                  <Button
+                    key={index}
+                    variant={answers[currentAssessment] === option.value ? "default" : "outline"}
+                    className="w-full justify-start h-auto py-3 px-4 mb-2"
+                    onClick={() => handleAnswerSelect(option.value)}
+                  >
+                    {option.text}
+                  </Button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <>
           <div className="flex justify-between items-center mb-6">
@@ -833,73 +832,53 @@ const MentalHealth = () => {
             </Button>
           </div>
 
-            {!showResources ? (
-              <div className="space-y-6">
-                {overallScore !== null && (
-                  <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
-                    <CardHeader>
-                      <CardTitle>Your Wellbeing Score</CardTitle>
-                      <CardDescription>Based on your responses across all categories</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-center mb-4">
-                        <div className="relative h-48 w-48">
-                          {/* Base circle (background) */}
-                          <svg className="w-full h-full" viewBox="0 0 100 100">
-                            <circle 
-                              cx="50" 
-                              cy="50" 
-                              r="40" 
-                              fill="transparent" 
-                              stroke="#e5e7eb" 
-                              strokeWidth="10"
-                            />
-                            {/* Progress circle */}
-                            <circle 
-                              cx="50" 
-                              cy="50" 
-                              r="40" 
-                              fill="transparent" 
-                              stroke={
-                                overallScore < 40 ? "#ef4444" : 
-                                overallScore < 70 ? "#eab308" : 
-                                "#22c55e"
-                              } 
-                              strokeWidth="10"
-                              strokeDasharray={`${overallScore * 2.51} 251`}
-                              strokeDashoffset="62.75"
-                              transform="rotate(-90 50 50)"
-                            />
-                          </svg>
-                          {/* Center text */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-4xl font-bold">{overallScore}%</span>
-                          </div>
+          {!showResources ? (
+            <div className="space-y-6">
+              {overallScore !== null && (
+                <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
+                  <CardHeader>
+                    <CardTitle>Your Wellbeing Score</CardTitle>
+                    <CardDescription>Based on your responses across all categories</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="relative h-48 w-48">
+                        {/* Base circle (background) */}
+                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                          <circle 
+                            cx="50" 
+                            cy="50" 
+                            r="40" 
+                            fill="transparent" 
+                            stroke="#e5e7eb" 
+                            strokeWidth="10"
+                          />
+                          {/* Progress circle */}
+                          <circle 
+                            cx="50" 
+                            cy="50" 
+                            r="40" 
+                            fill="transparent" 
+                            stroke={
+                              overallScore < 40 ? "#ef4444" : 
+                              overallScore < 70 ? "#eab308" : 
+                              "#22c55e"
+                            } 
+                            strokeWidth="10"
+                            strokeDasharray={`${overallScore * 2.51} 251`}
+                            strokeDashoffset="62.75"
+                            transform="rotate(-90 50 50)"
+                          />
+                        </svg>
+                        {/* Center text */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-4xl font-bold">{overallScore}%</span>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleSaveResource(resource)}
-                      >
-                        <Bookmark className="h-5 w-5" />
-                      </Button>
                     </div>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p>{resource.description}</p>
                   </CardContent>
-                  <CardFooter>
-                    <Button 
-                      className="w-full bg-care-primary hover:bg-care-secondary"
-                      onClick={() => handleResourceClick(resource)}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Read Article
-                    </Button>
-                  </CardFooter>
                 </Card>
-              ))}
+              )}
             </div>
           ) : (
             <Card>
