@@ -18,9 +18,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { useToast } from './ui/use-toast';
-
-// API URL constant
-const API_URL = 'http://localhost:5000';
+import { API_URL } from '../config/api.config';
 
 interface Medication {
   _id?: string;

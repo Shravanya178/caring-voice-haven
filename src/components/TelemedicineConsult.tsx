@@ -6,6 +6,7 @@ import { useToast } from './ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { LanguageContext } from '../context/LanguageContext';
+import { API_URL } from '../config/api.config';
 
 interface Doctor {
   id: string;
@@ -69,7 +70,7 @@ const TelemedicineConsult = () => {
   const fetchAppointments = async () => {
     try {
       console.log('Fetching appointments from server...');
-      const response = await fetch('http://localhost:5000/api/appointments');
+      const response = await fetch(`${API_URL}/api/appointments`);
       if (!response.ok) {
         throw new Error(`Failed to fetch appointments: ${response.status}`);
       }
@@ -112,7 +113,7 @@ const TelemedicineConsult = () => {
       console.log('Sending appointment data:', newAppointment);
       
       // Send to server
-      const response = await fetch('http://localhost:5000/api/appointments', {
+      const response = await fetch(`${API_URL}/api/appointments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +174,7 @@ const TelemedicineConsult = () => {
       console.log('Deleting appointment with ID:', appointmentId);
       
       // Send delete request to server first
-      const response = await fetch(`http://localhost:5000/api/appointments/${appointmentId}`, {
+      const response = await fetch(`${API_URL}/api/appointments/${appointmentId}`, {
         method: 'DELETE',
       });
       
