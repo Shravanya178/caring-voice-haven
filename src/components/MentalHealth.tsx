@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Heart, FileText, ArrowRight, Bookmark, ExternalLink, AlertTriangle, Info, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -5,7 +6,7 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { useToast } from './ui/use-toast';
 import { Skeleton } from './ui/skeleton';
-import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Resource {
   id: string;
@@ -37,7 +38,7 @@ interface AssessmentResult {
 
 const MentalHealth = () => {
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t } = useLanguage(); // Use the language context instead of react-i18next
   const [ageGroup] = useState<string>('senior');
   const [fontSize, setFontSize] = useState<number>(18);
   const [highContrast, setHighContrast] = useState<boolean>(false);
@@ -511,8 +512,8 @@ const MentalHealth = () => {
       window.open(resource.link, '_blank', 'noopener,noreferrer');
     } else {
       toast({
-        title: "Resource Selected",
-        description: `Viewing ${resource.title}`,
+        title: t('mentalhealth.resource.selected', 'Resource Selected'),
+        description: `${t('mentalhealth.viewing', 'Viewing')} ${resource.title}`,
       });
     }
   };
@@ -776,22 +777,22 @@ const MentalHealth = () => {
     <div className="container mx-auto px-4 py-6 md:ml-64 animate-fade-in">
       <div className="flex items-center mb-6">
         <Heart className="h-8 w-8 text-red-500 mr-3" />
-        <h1 className="text-3xl font-bold">Mental Health Support</h1>
+        <h1 className="text-3xl font-bold">{t('mentalhealth.title', 'Mental Health Support')}</h1>
       </div>
 
       {!assessmentComplete ? (
         <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
           <CardHeader>
-            <CardTitle>Mental Wellness Assessment</CardTitle>
+            <CardTitle>{t('mentalhealth.assessment.title', 'Mental Wellness Assessment')}</CardTitle>
             <CardDescription>
-              Answer a few questions to help us understand how you're feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.
+              {t('mentalhealth.assessment.description', 'Answer a few questions to help us understand how you\'re feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.')}
             </CardDescription>
             <Progress value={(currentAssessment / filteredAssessments.length) * 100} className="mt-2" />
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <h3 className="text-lg font-medium">
-                Question {currentAssessment + 1} of {filteredAssessments.length}
+                {t('mentalhealth.question', 'Question')} {currentAssessment + 1} {t('mentalhealth.of', 'of')} {filteredAssessments.length}
               </h3>
               <p className="text-base">{filteredAssessments[currentAssessment]?.question || "Loading..."}</p>
               <div className="space-y-2">
@@ -813,10 +814,10 @@ const MentalHealth = () => {
         <>
           <div className="flex justify-between items-center mb-6">
             <Button variant="outline" onClick={toggleView}>
-              {showResources ? "View Assessment Results" : "View Resources"}
+              {showResources ? t('mentalhealth.view.results', 'View Assessment Results') : t('mentalhealth.view.resources', 'View Resources')}
             </Button>
             <Button variant="ghost" onClick={restartAssessment}>
-              Retake Assessment
+              {t('mentalhealth.retake', 'Retake Assessment')}
             </Button>
           </div>
 
@@ -825,8 +826,8 @@ const MentalHealth = () => {
               {overallScore !== null && (
                 <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
                   <CardHeader>
-                    <CardTitle>Your Wellbeing Score</CardTitle>
-                    <CardDescription>Based on your responses across all categories</CardDescription>
+                    <CardTitle>{t('mentalhealth.score.title', 'Your Mental Wellness Score')}</CardTitle>
+                    <CardDescription>{t('mentalhealth.score.description', 'Based on your responses, we\'ve created a preliminary wellness assessment.')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-center mb-4">
@@ -915,7 +916,7 @@ const MentalHealth = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold mb-4">Recommended Resources</h2>
+              <h2 className="text-xl font-bold mb-4">{t('mentalhealth.view.recommended', 'Recommended Resources')}</h2>
               {recommendedResources.map((resource) => (
                 <Card key={resource.id} className="overflow-hidden">
                   <CardHeader>
@@ -939,7 +940,7 @@ const MentalHealth = () => {
                       onClick={() => handleResourceClick(resource)}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Read Article
+                      {t('mentalhealth.read.article', 'Read Article')}
                     </Button>
                   </CardFooter>
                 </Card>
