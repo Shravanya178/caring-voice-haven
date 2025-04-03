@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Pill, Brain, Phone, Mic, MapPin, MessageSquare, Video, Users, Heart } from 'lucide-react';
+import { Home, Pill, Brain, Phone, Mic, MapPin, MessageSquare, Video, Users, Heart, Globe } from 'lucide-react';
 import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
+import { useLanguage } from '../context/LanguageContext';
 
 interface NavItem {
   path: string;
@@ -14,17 +15,18 @@ interface NavItem {
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { toast } = useToast();
+  const { language, setLanguage, t } = useLanguage();
   
   const navItems: NavItem[] = [
-    { path: '/', label: 'Home', icon: <Home className="h-7 w-7" /> },
-    { path: '/medications', label: 'Medications', icon: <Pill className="h-7 w-7" /> },
-    { path: '/games', label: 'Games', icon: <Brain className="h-7 w-7" /> },
-    { path: '/emergency', label: 'Emergency', icon: <Phone className="h-7 w-7" /> },
-    { path: '/pharmacy', label: 'Pharmacy', icon: <MapPin className="h-7 w-7" /> },
-    { path: '/chatbot', label: 'AI Assistant', icon: <MessageSquare className="h-7 w-7" /> },
-    { path: '/telemedicine', label: 'Video Call', icon: <Video className="h-7 w-7" /> },
-    { path: '/social', label: 'Social Club', icon: <Users className="h-7 w-7" /> },
-    { path: '/mentalhealth', label: 'Mental Health', icon: <Heart className="h-7 w-7" /> },
+    { path: '/', label: t('nav.home'), icon: <Home className="h-7 w-7" /> },
+    { path: '/medications', label: t('nav.medications'), icon: <Pill className="h-7 w-7" /> },
+    { path: '/games', label: t('nav.games'), icon: <Brain className="h-7 w-7" /> },
+    { path: '/emergency', label: t('nav.emergency'), icon: <Phone className="h-7 w-7" /> },
+    { path: '/pharmacy', label: t('nav.pharmacy'), icon: <MapPin className="h-7 w-7" /> },
+    { path: '/chatbot', label: t('nav.assistant'), icon: <MessageSquare className="h-7 w-7" /> },
+    { path: '/telemedicine', label: t('nav.videocall'), icon: <Video className="h-7 w-7" /> },
+    { path: '/social', label: t('nav.social'), icon: <Users className="h-7 w-7" /> },
+    { path: '/mentalhealth', label: t('nav.mentalhealth'), icon: <Heart className="h-7 w-7" /> },
   ];
 
   const handleVoiceAssistant = () => {
@@ -44,10 +46,27 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }, 1000);
   };
 
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setLanguage(e.target.value as any);
+  };
+
   return (
     <div className="min-h-screen flex flex-col pb-16 md:pb-0">
-      <header className="bg-care-primary text-white p-4 text-center">
-        <h1 className="text-2xl md:text-3xl font-bold">Caring Voice Haven</h1>
+      <header className="bg-care-primary text-white p-4 flex justify-between items-center">
+        <h1 className="text-2xl md:text-3xl font-bold">{t('app.title')}</h1>
+        <div className="flex items-center">
+          <Globe className="h-5 w-5 mr-2" />
+          <select 
+            value={language} 
+            onChange={handleLanguageChange}
+            className="bg-care-primary text-white border border-white/30 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+            aria-label={t('language.select')}
+          >
+            <option value="english">{t('language.english')}</option>
+            <option value="hindi">{t('language.hindi')}</option>
+            <option value="marathi">{t('language.marathi')}</option>
+          </select>
+        </div>
       </header>
 
       <main className="flex-grow container mx-auto p-4 md:p-6">

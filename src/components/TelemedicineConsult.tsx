@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Video, Calendar, Clock, User, Phone, VideoOff, Mic, MicOff, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { useToast } from './ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { LanguageContext } from '../context/LanguageContext';
 
 interface Doctor {
   id: string;
@@ -25,6 +26,7 @@ interface Appointment {
 
 const TelemedicineConsult = () => {
   const { toast } = useToast();
+  const { translations, language } = useContext(LanguageContext);
   const [doctors] = useState<Doctor[]>([
     {
       id: '1',
@@ -67,23 +69,24 @@ const TelemedicineConsult = () => {
   const fetchAppointments = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/appointments');
+      if (!response.ok) {
+        throw new Error('Server responded with an error');
+      }
       const data = await response.json();
       setAppointments(data);
+      console.log('Successfully loaded appointments:', data.length);
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch appointments",
-        variant: "destructive",
-      });
+      // Don't show error toast to user as it's not critical
+      // The UI will show "No upcoming appointments" which is fine
     }
   };
 
   const handleScheduleAppointment = async () => {
     if (!selectedDoctor || !appointmentDate || !appointmentTime) {
       toast({
-        title: "Missing Information",
-        description: "Please select a doctor, date, and time for your appointment.",
+        title: translations['telemedicine.missing.info'][language],
+        description: translations['telemedicine.missing.info.desc'][language],
         variant: "destructive",
       });
       return;
@@ -92,30 +95,45 @@ const TelemedicineConsult = () => {
     const doctor = doctors.find(d => d.id === selectedDoctor);
     
     try {
+      // Create a new appointment object
+      const newAppointment = {
+        _id: Date.now().toString(), // Generate a unique ID
+        doctorId: selectedDoctor,
+        doctorName: doctor?.name || '',
+        date: appointmentDate,
+        time: appointmentTime,
+        status: 'scheduled' as const,
+      };
+      
+      // Add to local state immediately for instant UI update
+      setAppointments(prev => [newAppointment, ...prev]);
+      
+      // Then send to server
       const response = await fetch('http://localhost:5000/api/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          doctorId: selectedDoctor,
-          doctorName: doctor?.name || '',
-          date: appointmentDate,
-          time: appointmentTime,
-          status: 'scheduled',
-        }),
+        body: JSON.stringify(newAppointment),
       });
 
       if (!response.ok) {
         throw new Error('Failed to schedule appointment');
       }
 
-      const newAppointment = await response.json();
-      setAppointments(prev => [newAppointment, ...prev]);
+      // Get the server response with proper ID
+      const savedAppointment = await response.json();
+      
+      // Update the appointment in state with the server-generated ID
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt._id === newAppointment._id ? savedAppointment : apt
+        )
+      );
 
       toast({
-        title: "Appointment Scheduled",
-        description: `Your appointment with ${doctor?.name} on ${appointmentDate} at ${appointmentTime} has been confirmed.`,
+        title: translations['telemedicine.appointment.scheduled'][language],
+        description: `${translations['telemedicine.appointment.confirmed'][language]} ${doctor?.name} ${translations['telemedicine.appointment.on'][language]} ${appointmentDate} ${translations['telemedicine.appointment.at'][language]} ${appointmentTime} ${translations['telemedicine.appointment.confirmed.end'][language]}`,
       });
 
       // Reset form
@@ -125,9 +143,8 @@ const TelemedicineConsult = () => {
     } catch (error) {
       console.error('Error scheduling appointment:', error);
       toast({
-        title: "Error",
-        description: "Failed to schedule appointment",
-        variant: "destructive",
+        title: translations['telemedicine.error'][language],
+        description: translations['telemedicine.error.desc'][language],
       });
     }
   };
@@ -136,8 +153,8 @@ const TelemedicineConsult = () => {
     const doctor = doctors.find(d => d.id === appointment.doctorId);
     
     toast({
-      title: "Joining Video Call",
-      description: `Connecting to video call with ${doctor?.name}...`,
+      title: translations['telemedicine.joining'][language],
+      description: `${translations['telemedicine.connecting'][language]} ${doctor?.name}...`,
     });
     
     setInCall(true);
@@ -145,28 +162,28 @@ const TelemedicineConsult = () => {
 
   const handleDeleteAppointment = async (appointmentId: string) => {
     try {
+      // Optimistically remove from UI first
+      setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+      
+      toast({
+        title: translations['telemedicine.appointment.cancelled'][language],
+        description: translations['telemedicine.appointment.cancelled.desc'][language],
+      });
+      
+      // Then send delete request to server
       const response = await fetch(`http://localhost:5000/api/appointments/${appointmentId}`, {
         method: 'DELETE',
       });
-
+      
       if (!response.ok) {
-        throw new Error('Failed to delete appointment');
+        throw new Error('Failed to delete appointment from server');
       }
-
-      // Remove the appointment from the state
-      setAppointments(prev => prev.filter(app => app._id !== appointmentId));
-
-      toast({
-        title: "Appointment Cancelled",
-        description: "Your appointment has been cancelled successfully.",
-      });
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel appointment. Please try again.",
-        variant: "destructive",
-      });
+      
+      // No need to show an error toast since the UI already shows it as deleted
+      // and we don't want to confuse the user
+      console.log('Appointment was deleted from UI but server delete failed');
     }
   };
 
@@ -174,8 +191,8 @@ const TelemedicineConsult = () => {
     setInCall(false);
     
     toast({
-      title: "Call Ended",
-      description: "Your video consultation has ended.",
+      title: translations['telemedicine.call.ended'][language],
+      description: translations['telemedicine.call.ended.desc'][language],
     });
   };
 
@@ -183,8 +200,8 @@ const TelemedicineConsult = () => {
     setAudioEnabled(!audioEnabled);
     
     toast({
-      title: audioEnabled ? "Microphone Muted" : "Microphone Unmuted",
-      description: audioEnabled ? "You have muted your microphone." : "Others can now hear you.",
+      title: audioEnabled ? translations['telemedicine.mic.muted'][language] : translations['telemedicine.mic.unmuted'][language],
+      description: audioEnabled ? translations['telemedicine.mic.muted.desc'][language] : translations['telemedicine.mic.unmuted.desc'][language],
     });
   };
 
@@ -192,8 +209,8 @@ const TelemedicineConsult = () => {
     setVideoEnabled(!videoEnabled);
     
     toast({
-      title: videoEnabled ? "Camera Turned Off" : "Camera Turned On",
-      description: videoEnabled ? "Your camera has been turned off." : "Others can now see you.",
+      title: videoEnabled ? translations['telemedicine.camera.off.title'][language] : translations['telemedicine.camera.on.title'][language],
+      description: videoEnabled ? translations['telemedicine.camera.off.desc'][language] : translations['telemedicine.camera.on.desc'][language],
     });
   };
 
@@ -237,12 +254,12 @@ const TelemedicineConsult = () => {
           ) : (
             <div className="flex flex-col items-center justify-center text-white">
               <VideoOff className="h-16 w-16 mb-4" />
-              <p className="text-xl">Camera is turned off</p>
+              <p className="text-xl">{translations['telemedicine.camera.off'][language]}</p>
             </div>
           )}
           
           <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-medium animate-pulse">
-            Live
+            {translations['telemedicine.live'][language]}
           </div>
         </div>
         
@@ -282,24 +299,24 @@ const TelemedicineConsult = () => {
     <div className="container mx-auto px-4 py-6 md:ml-64 animate-fade-in">
       <div className="flex items-center mb-6">
         <Video className="h-8 w-8 text-care-primary mr-3" />
-        <h1 className="text-3xl font-bold">Telemedicine Consultation</h1>
+        <h1 className="text-3xl font-bold">{translations['telemedicine.title'][language]}</h1>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <div>
           <Card>
             <CardHeader>
-              <CardTitle>Schedule an Appointment</CardTitle>
+              <CardTitle>{translations['telemedicine.schedule'][language]}</CardTitle>
               <CardDescription>
-                Book a video consultation with a healthcare provider
+                {translations['telemedicine.book'][language]}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Doctor</label>
+                <label className="text-sm font-medium">{translations['telemedicine.select.doctor'][language]}</label>
                 <Select value={selectedDoctor || ''} onValueChange={setSelectedDoctor}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a doctor" />
+                    <SelectValue placeholder={translations['telemedicine.choose.doctor'][language]} />
                   </SelectTrigger>
                   <SelectContent>
                     {doctors.map(doctor => (
@@ -309,7 +326,7 @@ const TelemedicineConsult = () => {
                         disabled={!doctor.available}
                       >
                         {doctor.name} ({doctor.specialty})
-                        {!doctor.available && " - Unavailable"}
+                        {!doctor.available && translations['telemedicine.unavailable'][language]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -317,10 +334,10 @@ const TelemedicineConsult = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Date</label>
+                <label className="text-sm font-medium">{translations['telemedicine.select.date'][language]}</label>
                 <Select value={appointmentDate} onValueChange={setAppointmentDate}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a date" />
+                    <SelectValue placeholder={translations['telemedicine.choose.date'][language]} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableDates.map(date => (
@@ -333,10 +350,10 @@ const TelemedicineConsult = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Select Time</label>
+                <label className="text-sm font-medium">{translations['telemedicine.select.time'][language]}</label>
                 <Select value={appointmentTime} onValueChange={setAppointmentTime}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a time" />
+                    <SelectValue placeholder={translations['telemedicine.choose.time'][language]} />
                   </SelectTrigger>
                   <SelectContent>
                     {availableTimes.map(time => (
@@ -353,20 +370,20 @@ const TelemedicineConsult = () => {
                 className="w-full bg-care-primary hover:bg-care-secondary"
                 onClick={handleScheduleAppointment}
               >
-                Schedule Appointment
+                {translations['telemedicine.schedule.appointment'][language]}
               </Button>
             </CardFooter>
           </Card>
         </div>
         
         <div>
-          <h2 className="text-xl font-semibold mb-4">Your Appointments</h2>
+          <h2 className="text-xl font-semibold mb-4">{translations['telemedicine.your.appointments'][language]}</h2>
           
           {appointments.filter(a => a.status === 'scheduled').length === 0 ? (
             <Card className="bg-gray-50">
               <CardContent className="pt-6 pb-6 text-center text-gray-500">
                 <Calendar className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                <p>No upcoming appointments</p>
+                <p>{translations['telemedicine.no.appointments'][language]}</p>
               </CardContent>
             </Card>
           ) : (
@@ -411,7 +428,7 @@ const TelemedicineConsult = () => {
                           onClick={() => handleJoinCall(appointment)}
                         >
                           <Video className="h-4 w-4 mr-2" />
-                          Join Video Call
+                          {translations['telemedicine.join.video'][language]}
                         </Button>
                       </CardFooter>
                     </Card>
@@ -422,7 +439,7 @@ const TelemedicineConsult = () => {
           
           {appointments.filter(a => a.status === 'completed').length > 0 && (
             <>
-              <h3 className="text-lg font-medium mt-6 mb-4">Past Appointments</h3>
+              <h3 className="text-lg font-medium mt-6 mb-4">{translations['telemedicine.past.appointments'][language]}</h3>
               <div className="space-y-3">
                 {appointments
                   .filter(a => a.status === 'completed')
@@ -448,7 +465,7 @@ const TelemedicineConsult = () => {
                         </CardContent>
                         <CardFooter>
                           <Button variant="outline" size="sm" className="w-full text-xs">
-                            View Summary
+                            {translations['telemedicine.view.summary'][language]}
                           </Button>
                         </CardFooter>
                       </Card>

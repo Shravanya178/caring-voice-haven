@@ -4,59 +4,61 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { colors, fontSize } = useTheme();
+  const { t, language } = useLanguage();
 
   const features = [
     {
-      title: 'Medications',
+      title: t('feature.medications'),
       icon: <Ionicons name="medical" size={40} color={colors.primary} />,
       screen: 'Medication',
-      description: 'Track and manage your medications',
+      description: t('feature.medications.desc'),
     },
     {
-      title: 'Emergency',
+      title: t('feature.emergency'),
       icon: <MaterialCommunityIcons name="phone-alert" size={40} color={colors.error} />,
       screen: 'Emergency',
-      description: 'Emergency contacts and SOS',
+      description: t('feature.emergency.desc'),
     },
     {
-      title: 'Memory Games',
+      title: t('feature.games'),
       icon: <MaterialCommunityIcons name="brain" size={40} color={colors.primary} />,
       screen: 'Games',
-      description: 'Keep your mind active',
+      description: t('feature.games.desc'),
     },
     {
-      title: 'Find Pharmacy',
+      title: t('feature.pharmacy'),
       icon: <MaterialCommunityIcons name="store" size={40} color={colors.primary} />,
       screen: 'Pharmacy',
-      description: 'Locate nearby pharmacies',
+      description: t('feature.pharmacy.desc'),
     },
     {
-      title: 'Video Call',
+      title: t('feature.videocall'),
       icon: <Ionicons name="videocam" size={40} color={colors.primary} />,
       screen: 'Telemedicine',
-      description: 'Telehealth consultations',
+      description: t('feature.videocall.desc'),
     },
     {
-      title: 'Social Club',
+      title: t('feature.social'),
       icon: <MaterialCommunityIcons name="account-group" size={40} color={colors.primary} />,
       screen: 'Social',
-      description: 'Connect with others',
+      description: t('feature.social.desc'),
     },
     {
-      title: 'Mental Health',
+      title: t('feature.mentalhealth'),
       icon: <Ionicons name="heart" size={40} color={colors.primary} />,
       screen: 'MentalHealth',
-      description: 'Support and resources',
+      description: t('feature.mentalhealth.desc'),
     },
     {
-      title: 'My Profile',
+      title: t('feature.profile'),
       icon: <Ionicons name="person" size={40} color={colors.primary} />,
       screen: 'Profile',
-      description: 'View and edit your profile',
+      description: t('feature.profile.desc'),
     },
   ];
 
@@ -83,9 +85,16 @@ const HomeScreen = () => {
   };
 
   const speakGreeting = () => {
-    const greeting = `Welcome to Caring Voice Haven. How can I help you today?`;
+    // Map language codes for Speech API
+    const languageMap: Record<string, string> = {
+      english: 'en',
+      hindi: 'hi-IN',
+      marathi: 'mr-IN'
+    };
+    
+    const greeting = `${t('welcome.message')} ${t('app.title')}`;
     Speech.speak(greeting, {
-      language: 'en',
+      language: languageMap[language] || 'en',
       pitch: 1.0,
       rate: 0.9,
     });
@@ -95,7 +104,7 @@ const HomeScreen = () => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <Text style={[styles.greeting, { color: colors.text, fontSize: fontSize.large }]}>
-          Welcome, Sara
+          {t('welcome.message')}, Sara
         </Text>
         <TouchableOpacity onPress={speakGreeting} style={styles.voiceButton}>
           <Ionicons name="volume-high" size={24} color={colors.primary} />
@@ -107,7 +116,7 @@ const HomeScreen = () => {
           <Ionicons name="notifications" size={24} color={colors.primary} style={styles.reminderIcon} />
           <View>
             <Text style={[styles.reminderTitle, { color: colors.text, fontSize: fontSize.medium }]}>
-              Today's Reminders
+              {t('reminders.title')}
             </Text>
             <Text style={[styles.reminderText, { color: colors.text, fontSize: fontSize.small }]}>
               Take Vitamin D at 8:00 AM
@@ -125,7 +134,7 @@ const HomeScreen = () => {
             <TouchableOpacity
               key={index}
               style={[styles.featureCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => navigation.navigate(feature.screen)}
+              onPress={() => navigation.navigate(feature.screen as never)}
             >
               <View style={styles.featureIconContainer}>{feature.icon}</View>
               <Text style={[styles.featureTitle, { color: colors.text, fontSize: fontSize.medium }]}>
@@ -144,7 +153,7 @@ const HomeScreen = () => {
         onPress={handleSOSPress}
       >
         <Ionicons name="alert-circle" size={32} color="#FFFFFF" />
-        <Text style={styles.sosText}>SOS</Text>
+        <Text style={styles.sosText}>{t('sos.button')}</Text>
       </TouchableOpacity>
     </View>
   );

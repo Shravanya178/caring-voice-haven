@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Pill, Brain, Phone, Bell, Calendar, Users, Bot, Heart } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
+import { useLanguage } from '../context/LanguageContext';
 
 const FeatureCard: React.FC<{
   title: string;
@@ -26,10 +27,11 @@ const FeatureCard: React.FC<{
 };
 
 const Dashboard: React.FC = () => {
+  const { t } = useLanguage();
   return (
     <div className="space-y-6 animate-fade-in mt-4 md:ml-64 px-4">
       <div>
-        <h2 className="text-3xl font-bold mb-6">Welcome, Sara</h2>
+        <h2 className="text-3xl font-bold mb-6">{t('welcome.message')}, Sara</h2>
         
         <div className="bg-care-light p-4 rounded-lg mb-8">
           <div className="flex items-center">
@@ -37,7 +39,7 @@ const Dashboard: React.FC = () => {
               <Bell className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h3 className="font-medium">Today's Reminders</h3>
+              <h3 className="font-medium">{t('reminders.title')}</h3>
               <p>Take Vitamin D at 8:00 AM</p>
               <p>Blood pressure medicine at 9:00 AM</p>
             </div>
@@ -46,53 +48,53 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div>
-        <h2 className="text-2xl font-semibold mb-4">Quick Access</h2>
+        <h2 className="text-2xl font-semibold mb-4">{t('feature.quickaccess')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <FeatureCard
-            title="Medications"
-            description="Track and manage your medications"
+            title={t('feature.medications')}
+            description={t('feature.medications.desc')}
             icon={<Pill className="h-8 w-8" />}
             to="/medications"
           />
           <FeatureCard
-            title="Memory Games"
-            description="Keep your mind active with fun games"
+            title={t('feature.games')}
+            description={t('feature.games.desc')}
             icon={<Brain className="h-8 w-8" />}
             to="/games"
           />
           <FeatureCard
-            title="Emergency"
-            description="Quickly reach your emergency contacts"
+            title={t('feature.emergency')}
+            description={t('feature.emergency.desc')}
             icon={<Phone className="h-8 w-8" />}
             to="/emergency"
           />
           <FeatureCard
-            title="Appointments"
-            description="View and manage your appointments"
+            title={t('feature.appointments')}
+            description={t('feature.appointments.desc')}
             icon={<Calendar className="h-8 w-8" />}
             to="/appointments"
           />
           <FeatureCard
-            title="Social Club"
-            description="Join social groups and activities"
+            title={t('feature.social')}
+            description={t('feature.social.desc')}
             icon={<Users className="h-8 w-8" />}
             to="/social"
           />
           <FeatureCard
-            title="Find Pharmacy"
-            description="Locate nearby pharmacies"
+            title={t('feature.pharmacy')}
+            description={t('feature.pharmacy.desc')}
             icon={<Pill className="h-8 w-8" />}
             to="/pharmacy"
           />
           <FeatureCard
-            title="Health Assistant"
-            description="AI-powered health support"
+            title={t('feature.assistant')}
+            description={t('feature.assistant.desc')}
             icon={<Bot className="h-8 w-8" />}
             to="/aihealth"
           />
           <FeatureCard
-            title="Telemedicine"
-            description="Virtual doctor consultations"
+            title={t('feature.videocall')}
+            description={t('feature.videocall.desc')}
             icon={<Phone className="h-8 w-8" />}
             to="/telemedicine"
           />

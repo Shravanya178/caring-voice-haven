@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { useToast } from './ui/use-toast';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Resource {
   id: string;
@@ -21,6 +22,7 @@ interface Assessment {
 
 const MentalHealth = () => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [resources] = useState<Resource[]>([
     {
       id: '1',
@@ -83,22 +85,22 @@ const MentalHealth = () => {
   const handleResourceClick = (resource: Resource) => {
     if (resource.link) {
       toast({
-        title: "Opening External Resource",
-        description: `Opening ${resource.title} in a new tab.`,
+        title: t('mentalhealth.opening.external'),
+        description: `${t('mentalhealth.opening.desc')} ${resource.title} ${t('mentalhealth.in.new.tab')}`,
       });
       window.open(resource.link, '_blank', 'noopener,noreferrer');
     } else {
       toast({
-        title: "Resource Selected",
-        description: `Viewing ${resource.title}`,
+        title: t('mentalhealth.resource.selected'),
+        description: `${t('mentalhealth.viewing')} ${resource.title}`,
       });
     }
   };
 
   const handleSaveResource = (resource: Resource) => {
     toast({
-      title: "Resource Saved",
-      description: `${resource.title} has been saved to your library.`,
+      title: t('mentalhealth.resource.saved'),
+      description: `${resource.title} ${t('mentalhealth.resource.saved.desc')}`,
     });
   };
 
@@ -133,22 +135,22 @@ const MentalHealth = () => {
     <div className="container mx-auto px-4 py-6 md:ml-64 animate-fade-in">
       <div className="flex items-center mb-6">
         <Heart className="h-8 w-8 text-red-500 mr-3" />
-        <h1 className="text-3xl font-bold">Mental Health Support</h1>
+        <h1 className="text-3xl font-bold">{t('mentalhealth.title')}</h1>
       </div>
 
       {wellnessScore === null ? (
         <div className="max-w-2xl mx-auto">
           <Card>
             <CardHeader>
-              <CardTitle>Mental Wellness Assessment</CardTitle>
+              <CardTitle>{t('mentalhealth.assessment.title')}</CardTitle>
               <CardDescription>
-                Answer a few questions to help us understand how you're feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.
+                {t('mentalhealth.assessment.description')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">
-                  Question {currentAssessment + 1} of {assessments.length}
+                  {t('mentalhealth.question')} {currentAssessment + 1} {t('mentalhealth.of')} {assessments.length}
                 </h3>
                 <p className="text-base">{assessments[currentAssessment].question}</p>
                 <div className="space-y-2">
@@ -171,10 +173,10 @@ const MentalHealth = () => {
         <>
           <div className="flex justify-between items-center mb-6">
             <Button variant="outline" onClick={toggleView}>
-              {showResources ? "View Assessment Results" : "View Resources"}
+              {showResources ? t('mentalhealth.view.results') : t('mentalhealth.view.resources')}
             </Button>
             <Button variant="ghost" onClick={restartAssessment}>
-              Retake Assessment
+              {t('mentalhealth.retake')}
             </Button>
           </div>
 
@@ -208,7 +210,7 @@ const MentalHealth = () => {
                       onClick={() => handleResourceClick(resource)}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Read Article
+                      {t('mentalhealth.read.article')}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -217,28 +219,28 @@ const MentalHealth = () => {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Your Mental Wellness Score</CardTitle>
+                <CardTitle>{t('mentalhealth.score.title')}</CardTitle>
                 <CardDescription>
-                  Based on your responses, we've created a preliminary wellness assessment.
+                  {t('mentalhealth.score.description')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Wellness Score</span>
+                    <span>{t('mentalhealth.wellness.score')}</span>
                     <span className="font-medium">{wellnessScore}%</span>
                   </div>
                   <Progress value={wellnessScore} className="h-3" />
                 </div>
                 
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <h3 className="font-medium text-blue-800 mb-2">What this means</h3>
+                  <h3 className="font-medium text-blue-800 mb-2">{t('mentalhealth.what.means')}</h3>
                   <p className="text-blue-700 text-sm">
                     {wellnessScore >= 70 
-                      ? "You appear to be managing well overall. Continue practicing good self-care!" 
+                      ? t('mentalhealth.score.high') 
                       : wellnessScore >= 40 
-                        ? "You may be experiencing some difficulties. Consider reviewing our resources or speaking with a professional." 
-                        : "Your responses suggest you might benefit from professional support. Please consider speaking with a healthcare provider."}
+                        ? t('mentalhealth.score.medium') 
+                        : t('mentalhealth.score.low')}
                   </p>
                 </div>
                 
@@ -246,7 +248,7 @@ const MentalHealth = () => {
                   className="w-full bg-care-primary hover:bg-care-secondary"
                   onClick={toggleView}
                 >
-                  View Recommended Resources
+                  {t('mentalhealth.view.recommended')}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </CardContent>

@@ -16,34 +16,37 @@ import TelemedicineConsult from "./components/TelemedicineConsult";
 import NotFound from "./pages/NotFound";
 import SocialClub from "./components/SocialClub";
 import AIHealth from "./components/AIHealth";
+import { LanguageProvider } from "./context/LanguageContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/medications" element={<MedicationTracker />} />
-            <Route path="/games" element={<MemoryGame />} />
-            <Route path="/emergency" element={<EmergencyContacts />} />
-            <Route path="/pharmacy" element={<PharmacyFinder />} />
-            <Route path="/chatbot" element={<AIAssistant />} />
-            <Route path="/mentalhealth" element={<MentalHealth />} />
-            <Route path="/telemedicine" element={<TelemedicineConsult />} />
-            <Route path="/social" element={<SocialClub />} />
-            <Route path="/appointments" element={<TelemedicineConsult />} />
-            <Route path="/aihealth" element={<AIHealth />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </TooltipProvider>
+    <LanguageProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/medications" element={<MedicationTracker />} />
+              <Route path="/games" element={<MemoryGame />} />
+              <Route path="/emergency" element={<EmergencyContacts />} />
+              <Route path="/pharmacy" element={<PharmacyFinder />} />
+              <Route path="/chatbot" element={<AIAssistant />} />
+              <Route path="/mentalhealth" element={<MentalHealth />} />
+              <Route path="/telemedicine" element={<TelemedicineConsult />} />
+              <Route path="/social" element={<SocialClub />} />
+              <Route path="/appointments" element={<TelemedicineConsult />} />
+              <Route path="/aihealth" element={<AIHealth />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </TooltipProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 

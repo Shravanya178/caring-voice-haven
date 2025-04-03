@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
 import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Message {
   id: string;
@@ -15,11 +16,12 @@ interface Message {
 
 const AIAssistant = () => {
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI health assistant. I can help you with medication information, health tips, or answer questions about senior care. How can I assist you today?",
+      text: t('aiassistant.welcome'),
       sender: 'ai',
       timestamp: new Date(),
     },
@@ -40,7 +42,14 @@ const AIAssistant = () => {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
+      
+      // Map language to speech recognition language code
+      const langMap: Record<string, string> = {
+        english: 'en-US',
+        hindi: 'hi-IN',
+        marathi: 'mr-IN'
+      };
+      recognitionRef.current.lang = langMap[language] || 'en-US';
 
       recognitionRef.current.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
@@ -48,8 +57,8 @@ const AIAssistant = () => {
         setIsListening(false);
         
         toast({
-          title: "Voice Recognized",
-          description: "Your question has been captured.",
+          title: t('aiassistant.voice.recognized'),
+          description: t('aiassistant.voice.recognized.desc'),
         });
       };
 
@@ -57,8 +66,8 @@ const AIAssistant = () => {
         console.error('Speech recognition error', event.error);
         setIsListening(false);
         toast({
-          title: "Voice Recognition Error",
-          description: "Could not recognize your voice. Please try again or type your question.",
+          title: t('aiassistant.voice.error'),
+          description: t('aiassistant.voice.error.desc'),
           variant: "destructive",
         });
       };
@@ -132,7 +141,7 @@ const AIAssistant = () => {
       // Add error message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I'm having trouble connecting to my knowledge base. Please try again later.",
+        text: t('aiassistant.error'),
         sender: 'ai',
         timestamp: new Date(),
       };
@@ -140,8 +149,8 @@ const AIAssistant = () => {
       setMessages((prev) => [...prev, errorMessage]);
       
       toast({
-        title: "Connection Error",
-        description: "Could not connect to the AI service. Please try again later.",
+        title: t('aiassistant.connection.error'),
+        description: t('aiassistant.connection.error.desc'),
         variant: "destructive",
       });
     } finally {
@@ -152,8 +161,8 @@ const AIAssistant = () => {
   const handleVoiceInput = () => {
     if (!recognitionRef.current) {
       toast({
-        title: "Voice Recognition Not Available",
-        description: "Your browser doesn't support voice recognition. Please type your question instead.",
+        title: t('aiassistant.voice.not.available'),
+        description: t('aiassistant.voice.not.available.desc'),
         variant: "destructive",
       });
       return;
@@ -169,15 +178,15 @@ const AIAssistant = () => {
       setIsListening(true);
       recognitionRef.current.start();
       toast({
-        title: "Voice Recognition",
-        description: "Voice input activated. Please speak your question.",
+        title: t('aiassistant.voice.recognition'),
+        description: t('aiassistant.voice.recognition.activated'),
       });
     } catch (error) {
       console.error('Error starting voice recognition:', error);
       setIsListening(false);
       toast({
-        title: "Voice Recognition Error",
-        description: "Could not start voice recognition. Please try again or type your question.",
+        title: t('aiassistant.voice.error'),
+        description: t('aiassistant.voice.error.desc'),
         variant: "destructive",
       });
     }
@@ -185,7 +194,7 @@ const AIAssistant = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 flex flex-col h-[85vh] md:ml-64 animate-fade-in">
-      <h1 className="text-3xl font-bold mb-6">AI Health Assistant</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('aiassistant.title')}</h1>
       
       <Card className="flex-grow flex flex-col bg-gray-50/50 mb-4 overflow-hidden">
         <CardContent className="flex-grow overflow-y-auto p-4">
@@ -247,7 +256,7 @@ const AIAssistant = () => {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
+          placeholder={t('aiassistant.placeholder')}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           className="flex-grow"
           disabled={isListening}
