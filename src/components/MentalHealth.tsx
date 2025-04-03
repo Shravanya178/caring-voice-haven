@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { useToast } from './ui/use-toast';
+import { Skeleton } from './ui/skeleton';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Resource {
   id: string;
@@ -35,6 +37,13 @@ interface AssessmentResult {
 
 const MentalHealth = () => {
   const { toast } = useToast();
+  const { t } = useLanguage(); // Use the language context instead of react-i18next
+  const [ageGroup] = useState<string>('senior');
+  const [fontSize, setFontSize] = useState<number>(18);
+  const [highContrast, setHighContrast] = useState<boolean>(false);
+  const [showAccessibility, setShowAccessibility] = useState<boolean>(false);
+  const [wellnessScore, setWellnessScore] = useState<number>(75);
+
   const [resources] = useState<Resource[]>([
     {
       id: '1',
@@ -146,9 +155,7 @@ const MentalHealth = () => {
     },
   ]);
 
-  // Restructured assessment questions with equal numbers for each category (4 each)
   const [assessments] = useState<Assessment[]>([
-    // Depression questions (4 questions)
     {
       id: 'd1',
       category: 'depression',
@@ -202,7 +209,6 @@ const MentalHealth = () => {
       ],
     },
     
-    // Anxiety questions (4 questions)
     {
       id: 'a1',
       category: 'anxiety',
@@ -256,7 +262,6 @@ const MentalHealth = () => {
       ],
     },
     
-    // Sleep questions (4 questions)
     {
       id: 's1',
       category: 'sleep',
@@ -310,7 +315,6 @@ const MentalHealth = () => {
       ],
     },
     
-    // Social connection questions (4 questions)
     {
       id: 'sc1',
       category: 'social',
@@ -364,7 +368,6 @@ const MentalHealth = () => {
       ],
     },
     
-    // Grief and loss questions (4 questions)
     {
       id: 'g1',
       category: 'grief',
@@ -418,7 +421,6 @@ const MentalHealth = () => {
       ],
     },
     
-    // Cognitive health questions (4 questions)
     {
       id: 'c1',
       category: 'cognitive',
@@ -472,7 +474,6 @@ const MentalHealth = () => {
       ],
     },
     
-    // Crisis indicator - always at the end
     {
       id: 'crisis1',
       category: 'crisis',
@@ -497,7 +498,6 @@ const MentalHealth = () => {
   const [showCrisisWarning, setShowCrisisWarning] = useState(false);
   const [assessmentComplete, setAssessmentComplete] = useState(false);
 
-  // Filter assessments based on age group
   const filteredAssessments = assessments.filter(assessment => 
     assessment.ageAppropriate?.includes('all') || assessment.ageAppropriate?.includes(ageGroup)
   );
@@ -505,22 +505,22 @@ const MentalHealth = () => {
   const handleResourceClick = (resource: Resource) => {
     if (resource.link) {
       toast({
-        title: t('mentalhealth.opening.external'),
-        description: `${t('mentalhealth.opening.desc')} ${resource.title} ${t('mentalhealth.in.new.tab')}`,
+        title: t('mentalhealth.opening.external', 'Opening External Resource'),
+        description: `${t('mentalhealth.opening.desc', 'Opening')} ${resource.title} ${t('mentalhealth.in.new.tab', 'in a new tab')}`,
       });
       window.open(resource.link, '_blank', 'noopener,noreferrer');
     } else {
       toast({
-        title: "Resource Selected",
-        description: `Viewing ${resource.title}`,
+        title: t('mentalhealth.resource.selected', 'Resource Selected'),
+        description: `${t('mentalhealth.viewing', 'Viewing')} ${resource.title}`,
       });
     }
   };
 
   const handleSaveResource = (resource: Resource) => {
     toast({
-      title: t('mentalhealth.resource.saved'),
-      description: `${resource.title} ${t('mentalhealth.resource.saved.desc')}`,
+      title: t('mentalhealth.resource.saved', 'Resource Saved'),
+      description: `${resource.title} ${t('mentalhealth.resource.saved.desc', 'has been saved to your collection')}`,
     });
   };
 
@@ -532,14 +532,12 @@ const MentalHealth = () => {
     if (currentAssessment < filteredAssessments.length - 1) {
       setCurrentAssessment(currentAssessment + 1);
     } else {
-      // Calculate results
       calculateResults(newAnswers);
       setAssessmentComplete(true);
     }
   };
 
   const calculateResults = (responses: {[key: string]: number}) => {
-    // Group answers by category
     const categorizedAnswers: {[category: string]: {scores: number[], display: string}} = {};
     
     filteredAssessments.forEach(assessment => {
@@ -556,7 +554,6 @@ const MentalHealth = () => {
       }
     });
     
-    // Calculate scores for each category
     const results: AssessmentResult[] = [];
     let totalScore = 0;
     let totalMaxPossible = 0;
@@ -571,11 +568,9 @@ const MentalHealth = () => {
         .flatMap(a => a.options)
         .map(o => o.value));
       
-      // Track for overall score
       totalScore += sum;
       totalMaxPossible += maxPossible;
       
-      // Determine severity
       const percentage = (sum / maxPossible) * 100;
       let severity: 'low' | 'moderate' | 'high';
       let interpretation = '';
@@ -591,7 +586,6 @@ const MentalHealth = () => {
         interpretation = getCategoryInterpretation(category, 'high');
       }
       
-      // Special handling for crisis category
       if (category === 'crisis' && sum > 0) {
         crisisFlagged = true;
       }
@@ -606,24 +600,20 @@ const MentalHealth = () => {
       });
     });
     
-    // Calculate overall wellbeing score (inverse of total score percentage)
     const overallPercentage = Math.max(0, 100 - ((totalScore / totalMaxPossible) * 100));
     
     setAssessmentResults(results);
     setOverallScore(Math.round(overallPercentage));
     setShowCrisisWarning(crisisFlagged);
     
-    // Generate recommended resources
     const concernCategories = results
       .filter(r => r.severity !== 'low')
       .map(r => r.category);
     
-    // Always add crisis resources if flagged
     if (crisisFlagged) {
       concernCategories.push('crisis');
     }
     
-    // Filter resources by age group and concerns
     const filtered = resources.filter(resource => 
       (resource.ageAppropriate?.includes('all') || resource.ageAppropriate?.includes(ageGroup)) &&
       resource.recommendedFor.some(cat => concernCategories.includes(cat))
@@ -762,7 +752,6 @@ const MentalHealth = () => {
     }
   };
 
-  // Handle accessibility preferences
   const toggleAccessibilityPanel = () => {
     setShowAccessibility(!showAccessibility);
   };
@@ -775,7 +764,6 @@ const MentalHealth = () => {
     setHighContrast(!highContrast);
   };
 
-  // Apply appropriate styles based on accessibility settings
   const accessibilityStyles = {
     fontSize: `${fontSize}px`,
     color: highContrast ? '#ffffff' : 'inherit',
@@ -788,29 +776,29 @@ const MentalHealth = () => {
     <div className="container mx-auto px-4 py-6 md:ml-64 animate-fade-in">
       <div className="flex items-center mb-6">
         <Heart className="h-8 w-8 text-red-500 mr-3" />
-        <h1 className="text-3xl font-bold">Mental Health Support</h1>
+        <h1 className="text-3xl font-bold">{t('mentalhealth.title', 'Mental Health Support')}</h1>
       </div>
 
       {!assessmentComplete ? (
         <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
           <CardHeader>
-            <CardTitle>Mental Wellness Assessment</CardTitle>
+            <CardTitle>{t('mentalhealth.assessment.title', 'Mental Wellness Assessment')}</CardTitle>
             <CardDescription>
-              Answer a few questions to help us understand how you're feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.
+              {t('mentalhealth.assessment.description', 'Answer a few questions to help us understand how you\'re feeling. This is not a diagnostic tool, but can help identify areas where support might be beneficial.')}
             </CardDescription>
             <Progress value={(currentAssessment / filteredAssessments.length) * 100} className="mt-2" />
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <h3 className="text-lg font-medium">
-                Question {currentAssessment + 1} of {assessments.length}
+                {t('mentalhealth.question', 'Question')} {currentAssessment + 1} {t('mentalhealth.of', 'of')} {filteredAssessments.length}
               </h3>
-              <p className="text-base">{assessments[currentAssessment].question}</p>
+              <p className="text-base">{filteredAssessments[currentAssessment]?.question || "Loading..."}</p>
               <div className="space-y-2">
-                {assessments[currentAssessment].options.map((option, index) => (
+                {filteredAssessments[currentAssessment]?.options.map((option, index) => (
                   <Button
                     key={index}
-                    variant={answers[currentAssessment] === option.value ? "default" : "outline"}
+                    variant={answers[filteredAssessments[currentAssessment]?.id || ""] === option.value ? "default" : "outline"}
                     className="w-full justify-start h-auto py-3 px-4 mb-2"
                     onClick={() => handleAnswerSelect(option.value)}
                   >
@@ -825,10 +813,10 @@ const MentalHealth = () => {
         <>
           <div className="flex justify-between items-center mb-6">
             <Button variant="outline" onClick={toggleView}>
-              {showResources ? "View Assessment Results" : "View Resources"}
+              {showResources ? t('mentalhealth.view.results', 'View Assessment Results') : t('mentalhealth.view.resources', 'View Resources')}
             </Button>
             <Button variant="ghost" onClick={restartAssessment}>
-              Retake Assessment
+              {t('mentalhealth.retake', 'Retake Assessment')}
             </Button>
           </div>
 
@@ -837,13 +825,12 @@ const MentalHealth = () => {
               {overallScore !== null && (
                 <Card className={`${highContrast ? 'bg-gray-900 border-gray-700' : ''}`}>
                   <CardHeader>
-                    <CardTitle>Your Wellbeing Score</CardTitle>
-                    <CardDescription>Based on your responses across all categories</CardDescription>
+                    <CardTitle>{t('mentalhealth.score.title', 'Your Mental Wellness Score')}</CardTitle>
+                    <CardDescription>{t('mentalhealth.score.description', 'Based on your responses, we\'ve created a preliminary wellness assessment.')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-center mb-4">
                       <div className="relative h-48 w-48">
-                        {/* Base circle (background) */}
                         <svg className="w-full h-full" viewBox="0 0 100 100">
                           <circle 
                             cx="50" 
@@ -853,7 +840,6 @@ const MentalHealth = () => {
                             stroke="#e5e7eb" 
                             strokeWidth="10"
                           />
-                          {/* Progress circle */}
                           <circle 
                             cx="50" 
                             cy="50" 
@@ -870,7 +856,6 @@ const MentalHealth = () => {
                             transform="rotate(-90 50 50)"
                           />
                         </svg>
-                        {/* Center text */}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-4xl font-bold">{overallScore}%</span>
                         </div>
@@ -879,43 +864,87 @@ const MentalHealth = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {assessmentResults.map((result) => (
+                <Card 
+                  key={result.category}
+                  className={`mb-4 border-l-4 ${getCategoryColor(result.severity)}`}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {getSeverityIcon(result.severity)}
+                        <CardTitle className={`text-lg ${getCategoryTextColor(result.severity)}`}>
+                          {result.categoryDisplay}
+                        </CardTitle>
+                      </div>
+                      <span className={`font-medium ${getCategoryTextColor(result.severity)}`}>
+                        {Math.round((result.score / result.maxScore) * 100)}%
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-700">{result.interpretation}</p>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {showCrisisWarning && (
+                <Card className="bg-red-50 border-red-300 mb-4">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
+                      <CardTitle className="text-lg text-red-700">
+                        Important Notice
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-red-700">
+                      Your responses indicate you may be experiencing thoughts of self-harm. Please consider reaching out to a mental health professional or crisis support service immediately.
+                    </p>
+                    <Button 
+                      className="w-full mt-4 bg-red-600 hover:bg-red-700"
+                      onClick={() => window.open('https://www.samhsa.gov/find-help/national-helpline', '_blank', 'noopener,noreferrer')}
+                    >
+                      Find Crisis Support
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Mental Wellness Score</CardTitle>
-                <CardDescription>
-                  Based on your responses, we've created a preliminary wellness assessment.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Wellness Score</span>
-                    <span className="font-medium">{wellnessScore}%</span>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h3 className="font-medium text-blue-800 mb-2">What this means</h3>
-                  <p className="text-blue-700 text-sm">
-                    {wellnessScore >= 70 
-                      ? "You appear to be managing well overall. Continue practicing good self-care!" 
-                      : wellnessScore >= 40 
-                        ? "You may be experiencing some difficulties. Consider reviewing our resources or speaking with a professional." 
-                        : "Your responses suggest you might benefit from professional support. Please consider speaking with a healthcare provider."}
-                  </p>
-                </div>
-                
-                <Button 
-                  className="w-full bg-care-primary hover:bg-care-secondary"
-                  onClick={toggleView}
-                >
-                  View Recommended Resources
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold mb-4">{t('mentalhealth.view.recommended', 'Recommended Resources')}</h2>
+              {recommendedResources.map((resource) => (
+                <Card key={resource.id} className="overflow-hidden">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{resource.title}</CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleSaveResource(resource)}
+                      >
+                        <Bookmark className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                    <p>{resource.description}</p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full bg-care-primary hover:bg-care-secondary"
+                      onClick={() => handleResourceClick(resource)}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      {t('mentalhealth.read.article', 'Read Article')}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           )}
         </>
       )}

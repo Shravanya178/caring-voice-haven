@@ -52,7 +52,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col pb-16 md:pb-0">
-      <header className="bg-care-primary text-white p-4 flex justify-between items-center">
+      <header className="bg-care-primary text-white p-4 flex justify-between items-center sticky top-0 z-30">
         <h1 className="text-2xl md:text-3xl font-bold">{t('app.title')}</h1>
         <div className="flex items-center">
           <Globe className="h-5 w-5 mr-2" />
@@ -69,12 +69,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto p-4 md:p-6">
+      <main className="flex-grow container mx-auto p-4 md:p-6 mt-2">
         {children}
       </main>
 
       {/* Voice assistant button */}
-      <div className="fixed right-4 bottom-20 md:bottom-24 z-10">
+      <div className="fixed right-4 bottom-20 md:bottom-24 z-20">
         <Button 
           onClick={handleVoiceAssistant}
           size="lg" 
@@ -85,7 +85,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </div>
 
       {/* Mobile Navigation */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 md:hidden z-10">
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 md:hidden z-30">
         <div className="flex justify-around">
           {navItems.map((item) => (
             <Link
@@ -105,7 +105,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </nav>
 
       {/* Desktop Navigation */}
-      <nav className="hidden md:block fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 pt-20">
+      <nav className="hidden md:block fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 pt-20 z-20">
         <div className="flex flex-col p-4 gap-2">
           {navItems.map((item) => (
             <Link
