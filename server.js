@@ -1,3 +1,4 @@
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -6,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
+import dbService from './src/services/dbService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +32,7 @@ const openai = new OpenAI({
 });
 
 // MongoDB Connection
-let usingMockDatabase = true; // Set to true by default to ensure data persistence
+let usingMockDatabase = false; // Set to false to use the real MongoDB
 
 // Mock database for demonstration purposes
 const mockDb = {
@@ -348,6 +350,22 @@ app.post('/api/chat', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+// Connect to MongoDB if not using mock database
+(async () => {
+  if (!usingMockDatabase) {
+    try {
+      await dbService.connect();
+      console.log('Connected to MongoDB successfully');
+    } catch (error) {
+      console.error('Failed to connect to MongoDB:', error);
+      console.log('Falling back to mock database');
+      usingMockDatabase = true;
+    }
+  }
+  
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Using ${usingMockDatabase ? 'mock' : 'MongoDB'} database`);
+  });
+})();
