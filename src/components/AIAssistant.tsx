@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
 import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import { useLanguage } from '../context/LanguageContext';
 
 // Define types for SpeechRecognition - needed for TypeScript
 declare global {
@@ -26,19 +27,6 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
 }
-
-interface LanguageContextType {
-  t: (key: string, defaultValue: string) => string;
-  language: string;
-}
-
-// Mock language context if not available in your app
-const useLanguage = (): LanguageContextType => {
-  return {
-    t: (key: string, defaultValue: string) => defaultValue,
-    language: 'english'
-  };
-};
 
 const AIAssistant = () => {
   const { toast } = useToast();
