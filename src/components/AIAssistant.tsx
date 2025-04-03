@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Mic } from 'lucide-react';
+import { Send, User, Bot, Mic, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useToast } from './ui/use-toast';
@@ -26,17 +25,61 @@ const AIAssistant = () => {
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    // Initialize speech recognition if available
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+        
+        toast({
+          title: "Voice Recognized",
+          description: "Your question has been captured.",
+        });
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+        toast({
+          title: "Voice Recognition Error",
+          description: "Could not recognize your voice. Please try again or type your question.",
+          variant: "destructive",
+        });
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, [toast]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     // Add user message
@@ -47,55 +90,97 @@ const AIAssistant = () => {
       timestamp: new Date(),
     };
 
-    setMessages([...messages, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponses: { [key: string]: string } = {
-        medication: "It's important to take your medications as prescribed. If you're experiencing side effects, please consult with your doctor before making any changes.",
-        pain: "For minor pain, you might try a warm compress or gentle stretching. If pain persists, please consult with your healthcare provider.",
-        sleep: "Establishing a regular sleep schedule can help improve sleep quality. Try avoiding screens before bedtime and create a comfortable sleep environment.",
-        hello: "Hello! How are you feeling today? Is there something specific I can help you with?",
-        hi: "Hi there! How can I assist you with your health needs today?",
-      };
+    try {
+      console.log('Sending message to server:', userMessage.text);
+      
+      // Send message to server
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userMessage.text }),
+      });
 
-      // Simple keyword matching for demo purposes
-      const keyword = Object.keys(aiResponses).find(key => 
-        input.toLowerCase().includes(key)
-      );
+      console.log('Server response status:', response.status);
 
-      const responseText = keyword 
-        ? aiResponses[keyword]
-        : "I'm here to help with health-related questions. Could you provide more details about what you'd like to know?";
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to get response from server: ${response.status} ${errorText}`);
+      }
 
+      const data = await response.json();
+      console.log('Server response data:', data);
+      
+      // Add AI response
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: responseText,
+        text: data.response,
         sender: 'ai',
         timestamp: new Date(),
       };
 
-      setMessages(prevMessages => [...prevMessages, aiMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm having trouble connecting to my knowledge base. Please try again later.",
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+      
+      toast({
+        title: "Connection Error",
+        description: "Could not connect to the AI service. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const handleVoiceInput = () => {
-    toast({
-      title: "Voice Recognition",
-      description: "Voice input activated. Please speak your question.",
-    });
-    
-    // Simulate voice recognition
-    setTimeout(() => {
-      setInput("What medications should I take for pain?");
+    if (!recognitionRef.current) {
       toast({
-        title: "Voice Recognized",
-        description: "Your question has been captured.",
+        title: "Voice Recognition Not Available",
+        description: "Your browser doesn't support voice recognition. Please type your question instead.",
+        variant: "destructive",
       });
-    }, 2000);
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.abort();
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      setIsListening(true);
+      recognitionRef.current.start();
+      toast({
+        title: "Voice Recognition",
+        description: "Voice input activated. Please speak your question.",
+      });
+    } catch (error) {
+      console.error('Error starting voice recognition:', error);
+      setIsListening(false);
+      toast({
+        title: "Voice Recognition Error",
+        description: "Could not start voice recognition. Please try again or type your question.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -152,12 +237,12 @@ const AIAssistant = () => {
       
       <div className="flex gap-2">
         <Button 
-          variant="outline" 
+          variant={isListening ? "default" : "outline"}
           size="icon" 
           onClick={handleVoiceInput}
-          className="flex-none"
+          className={`flex-none ${isListening ? 'bg-red-500 hover:bg-red-600' : ''}`}
         >
-          <Mic className="h-4 w-4" />
+          {isListening ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
         </Button>
         <Input
           value={input}
@@ -165,9 +250,14 @@ const AIAssistant = () => {
           placeholder="Type your message..."
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           className="flex-grow"
+          disabled={isListening}
         />
-        <Button onClick={handleSend} disabled={!input.trim() || loading} className="flex-none bg-care-primary hover:bg-care-secondary">
-          <Send className="h-4 w-4" />
+        <Button 
+          onClick={handleSend} 
+          disabled={!input.trim() || loading} 
+          className="flex-none bg-care-primary hover:bg-care-secondary"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
     </div>

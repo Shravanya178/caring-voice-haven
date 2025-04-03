@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pill, Plus, Check, Clock, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -21,7 +20,7 @@ import {
 import { useToast } from './ui/use-toast';
 
 interface Medication {
-  id: string;
+  _id?: string;
   name: string;
   dosage: string;
   frequency: string;
@@ -31,34 +30,10 @@ interface Medication {
 
 const MedicationTracker: React.FC = () => {
   const { toast } = useToast();
-  const [medications, setMedications] = useState<Medication[]>([
-    {
-      id: '1',
-      name: 'Vitamin D',
-      dosage: '1000 IU',
-      frequency: 'Daily',
-      time: '8:00 AM',
-      taken: false,
-    },
-    {
-      id: '2',
-      name: 'Blood Pressure Medicine',
-      dosage: '10mg',
-      frequency: 'Daily',
-      time: '9:00 AM',
-      taken: false,
-    },
-    {
-      id: '3',
-      name: 'Calcium',
-      dosage: '500mg',
-      frequency: 'Daily',
-      time: '8:00 PM',
-      taken: false,
-    },
-  ]);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [newMedication, setNewMedication] = useState<Omit<Medication, 'id' | 'taken'>>({
+  const [newMedication, setNewMedication] = useState<Omit<Medication, '_id' | 'taken'>>({
     name: '',
     dosage: '',
     frequency: 'Daily',
@@ -67,7 +42,36 @@ const MedicationTracker: React.FC = () => {
 
   const [open, setOpen] = useState(false);
 
-  const handleAdd = () => {
+  useEffect(() => {
+    fetchMedications();
+  }, []);
+
+  const fetchMedications = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching medications from server...');
+      const response = await fetch('http://localhost:5000/api/medications');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch medications');
+      }
+      
+      const data = await response.json();
+      console.log('Received medications:', data);
+      setMedications(data);
+    } catch (error) {
+      console.error('Error fetching medications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch medications. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
     if (!newMedication.name || !newMedication.time) {
       toast({
         title: 'Missing Information',
@@ -77,53 +81,120 @@ const MedicationTracker: React.FC = () => {
       return;
     }
 
-    const newMed: Medication = {
-      ...newMedication,
-      id: Date.now().toString(),
-      taken: false,
-    };
+    try {
+      console.log('Sending medication data:', newMedication);
+      const response = await fetch('http://localhost:5000/api/medications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newMedication,
+          taken: false,
+        }),
+      });
 
-    setMedications([...medications, newMed]);
-    setNewMedication({
-      name: '',
-      dosage: '',
-      frequency: 'Daily',
-      time: '',
-    });
-    setOpen(false);
+      if (!response.ok) {
+        throw new Error('Failed to add medication');
+      }
 
-    toast({
-      title: 'Medication Added',
-      description: `${newMedication.name} has been added to your list.`,
-    });
-  };
+      const savedMedication = await response.json();
+      console.log('Saved medication:', savedMedication);
+      
+      setMedications(prev => [savedMedication, ...prev]);
+      setNewMedication({
+        name: '',
+        dosage: '',
+        frequency: 'Daily',
+        time: '',
+      });
+      setOpen(false);
 
-  const handleTaken = (id: string) => {
-    setMedications(
-      medications.map((med) =>
-        med.id === id ? { ...med, taken: !med.taken } : med
-      )
-    );
-
-    const med = medications.find((m) => m.id === id);
-    if (med) {
       toast({
-        title: med.taken ? 'Medication Unmarked' : 'Medication Taken',
-        description: `${med.name} has been ${
-          med.taken ? 'unmarked' : 'marked as taken'
-        }.`,
+        title: 'Medication Added',
+        description: `${newMedication.name} has been added to your list.`,
+      });
+    } catch (error) {
+      console.error('Error adding medication:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add medication. Please try again later.",
+        variant: "destructive",
       });
     }
   };
 
-  const handleDelete = (id: string) => {
-    const med = medications.find((m) => m.id === id);
-    setMedications(medications.filter((med) => med.id !== id));
-    
-    if (med) {
+  const handleTaken = async (id: string) => {
+    try {
+      const med = medications.find((m) => m._id === id);
+      if (!med) return;
+      
+      const updatedTaken = !med.taken;
+      
+      const response = await fetch(`http://localhost:5000/api/medications/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...med,
+          taken: updatedTaken,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update medication');
+      }
+
+      const updatedMedication = await response.json();
+      
+      setMedications(
+        medications.map((med) =>
+          med._id === id ? updatedMedication : med
+        )
+      );
+
+      toast({
+        title: updatedTaken ? 'Medication Taken' : 'Medication Unmarked',
+        description: `${med.name} has been ${
+          updatedTaken ? 'marked as taken' : 'unmarked'
+        }.`,
+      });
+    } catch (error) {
+      console.error('Error updating medication:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update medication status. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const med = medications.find((m) => m._id === id);
+      if (!med) return;
+      
+      const response = await fetch(`http://localhost:5000/api/medications/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete medication');
+      }
+      
+      setMedications(medications.filter((med) => med._id !== id));
+      
       toast({
         title: 'Medication Removed',
         description: `${med.name} has been removed from your list.`,
+      });
+    } catch (error) {
+      console.error('Error deleting medication:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete medication. Please try again later.",
+        variant: "destructive",
       });
     }
   };
@@ -160,12 +231,9 @@ const MedicationTracker: React.FC = () => {
                   id="dosage"
                   value={newMedication.dosage}
                   onChange={(e) =>
-                    setNewMedication({
-                      ...newMedication,
-                      dosage: e.target.value,
-                    })
+                    setNewMedication({ ...newMedication, dosage: e.target.value })
                   }
-                  placeholder="Ex: 10mg, 1 pill"
+                  placeholder="e.g., 500mg"
                 />
               </div>
               <div className="grid gap-2">
@@ -207,7 +275,11 @@ const MedicationTracker: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {medications.length === 0 ? (
+        {loading ? (
+          <div className="text-center p-8 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">Loading medications...</p>
+          </div>
+        ) : medications.length === 0 ? (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
             <Pill className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-xl font-medium text-gray-600 mb-2">
@@ -220,7 +292,7 @@ const MedicationTracker: React.FC = () => {
         ) : (
           medications.map((med) => (
             <div
-              key={med.id}
+              key={med._id}
               className={`bg-white rounded-lg p-4 shadow border-l-4 ${
                 med.taken ? 'border-green-500' : 'border-care-primary'
               } flex justify-between items-center`}
@@ -251,7 +323,7 @@ const MedicationTracker: React.FC = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => handleTaken(med.id)}
+                  onClick={() => handleTaken(med._id!)}
                   className={med.taken ? 'text-green-500' : 'text-care-primary'}
                 >
                   <Check className="h-4 w-4" />
@@ -259,7 +331,7 @@ const MedicationTracker: React.FC = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => handleDelete(med.id)}
+                  onClick={() => handleDelete(med._id!)}
                   className="text-gray-500"
                 >
                   <Trash2 className="h-4 w-4" />

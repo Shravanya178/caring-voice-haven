@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Heart, FileText, ArrowRight, Bookmark, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -42,12 +41,14 @@ const MentalHealth = () => {
       title: 'Sleep Hygiene Tips for Better Rest',
       category: 'Sleep',
       description: 'Improve your sleep quality with these evidence-based recommendations.',
+      link: 'https://www.sleepfoundation.org/sleep-hygiene/healthy-sleep-tips',
     },
     {
       id: '4',
       title: 'Mindfulness Meditation Guide',
       category: 'Mindfulness',
       description: 'A beginner\'s guide to practicing mindfulness meditation for mental wellbeing.',
+      link: 'https://www.mindful.org/meditation/mindfulness-getting-started/',
     },
   ]);
 
@@ -85,7 +86,7 @@ const MentalHealth = () => {
         title: "Opening External Resource",
         description: `Opening ${resource.title} in a new tab.`,
       });
-      // In a real app, this would open the link in a new tab
+      window.open(resource.link, '_blank', 'noopener,noreferrer');
     } else {
       toast({
         title: "Resource Selected",
@@ -206,17 +207,8 @@ const MentalHealth = () => {
                       className="w-full bg-care-primary hover:bg-care-secondary"
                       onClick={() => handleResourceClick(resource)}
                     >
-                      {resource.link ? (
-                        <>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Visit Resource
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="h-4 w-4 mr-2" />
-                          Read Article
-                        </>
-                      )}
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Read Article
                     </Button>
                   </CardFooter>
                 </Card>
