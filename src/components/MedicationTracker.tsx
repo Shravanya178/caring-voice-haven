@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Pill, Plus, Check, Clock, Trash2 } from 'lucide-react';
+import { Pill, Plus, Check, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -33,6 +35,9 @@ const MedicationTracker: React.FC = () => {
   const { toast } = useToast();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [medicationToDelete, setMedicationToDelete] = useState<Medication | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
   const [newMedication, setNewMedication] = useState<Omit<Medication, '_id' | 'taken'>>({
     name: '',
@@ -186,31 +191,63 @@ const MedicationTracker: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const med = medications.find((m) => m._id === id);
-      if (!med) return;
+      setIsDeleting(true);
       
+      const med = medications.find((m) => m._id === id);
+      if (!med) {
+        setIsDeleting(false);
+        return;
+      }
+      
+      console.log('Deleting medication with ID:', id);
+      
+      // First delete from the database
       const response = await fetch(`${API_URL}/api/medications/${id}`, {
         method: 'DELETE',
       });
-
+      
+      console.log('Delete response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to delete medication');
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error(`Failed to delete medication: ${response.status} - ${errorData}`);
       }
       
-      setMedications(medications.filter((med) => med._id !== id));
+      // Then update the UI if database deletion was successful
+      setMedications(prevMeds => prevMeds.filter((m) => m._id !== id));
+      
+      console.log('Medication successfully deleted from database and UI');
       
       toast({
         title: 'Medication Removed',
         description: `${med.name} has been removed from your list.`,
       });
+      
+      // Close the dialog and reset state
+      setDeleteDialogOpen(false);
+      setMedicationToDelete(null);
     } catch (error) {
       console.error('Error deleting medication:', error);
       toast({
         title: "Error",
-        description: "Failed to delete medication.",
+        description: "Failed to delete medication. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const confirmDelete = () => {
+    if (medicationToDelete?._id) {
+      handleDelete(medicationToDelete._id);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setMedicationToDelete(null);
   };
 
   return (
@@ -317,7 +354,10 @@ const MedicationTracker: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleDelete(med._id!)}
+                  onClick={() => {
+                    setMedicationToDelete(med);
+                    setDeleteDialogOpen(true);
+                  }}
                   className="text-gray-500 hover:text-red-500"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -350,6 +390,44 @@ const MedicationTracker: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{medicationToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete} 
+              disabled={isDeleting}
+              className="gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Medication
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

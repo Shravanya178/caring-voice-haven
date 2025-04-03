@@ -5,7 +5,7 @@
 export const getServerHost = (): string => {
   // For remote connections, use the server's actual IP address
   // Default to the server IP address (from ipconfig)
-  return "192.168.1.101";
+  return "192.168.0.100";
 };
 
 // Get the API base URL

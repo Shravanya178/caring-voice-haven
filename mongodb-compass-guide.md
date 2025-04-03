@@ -48,9 +48,9 @@ This guide will help you set up remote access to your MongoDB database, allowing
 
 2. Enter the connection string using your server's IP address:
    ```
-   mongodb://192.168.1.101:27017/?directConnection=true
+   mongodb://192.168.0.100:27017/?directConnection=true
    ```
-   (Replace 192.168.1.101 with your server's actual IP address)
+   (Replace 192.168.0.100 with your server's actual IP address if it changes)
 
 3. Click "Connect"
 

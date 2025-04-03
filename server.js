@@ -56,10 +56,10 @@ let usingMockDatabase = false; // Explicitly set to false to use MongoDB
 const MONGODB_URI = 'mongodb://0.0.0.0:27017/caring-voice-haven';
 
 // Option 2: Use your machine's actual IP address (recommended for remote connections via MongoDB Compass)
-// const MONGODB_URI = 'mongodb://192.168.1.101:27017/caring-voice-haven';
+// const MONGODB_URI = 'mongodb://192.168.0.100:27017/caring-voice-haven';
 
 // Connection string for MongoDB Compass on other devices:
-// mongodb://192.168.1.101:27017/?directConnection=true
+// mongodb://192.168.0.100:27017/?directConnection=true
 
 // Mock database for demonstration purposes
 const mockDb = {
