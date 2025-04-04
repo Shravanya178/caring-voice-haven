@@ -16,6 +16,8 @@ interface LanguageContextProps {
   setLanguage: (language: LanguageType) => void;
   t: (key: string) => string; // Translation function
   translations: Translations; // Add translations to the context
+  translateText: (text: string, targetLanguage: string) => Promise<string>;
+  batchTranslate: (items: string[], targetLanguage: string) => Promise<Record<string, string>>;
 }
 
 // Create context with default values
@@ -24,6 +26,8 @@ export const LanguageContext = createContext<LanguageContextProps>({
   setLanguage: () => {},
   t: (key: string) => key,
   translations: {}, // Add empty translations object as default
+  translateText: async () => "",
+  batchTranslate: async () => ({}),
 });
 
 // Translations for all languages
@@ -646,6 +650,95 @@ const translations: Translations = {
 // Hook for using the language context
 export const useLanguage = () => useContext(LanguageContext);
 
+// Function to translate text using LibreTranslate API
+export const translateText = async (text: string, targetLanguage: string): Promise<string> => {
+  // Skip translation if target language is English
+  if (targetLanguage === 'english') {
+    return text;
+  }
+
+  try {
+    // Map our UI language codes to LibreTranslate language codes
+    const languageMap: Record<string, string> = {
+      hindi: 'hi',
+      marathi: 'mr',
+      english: 'en'
+    };
+
+    const langCode = languageMap[targetLanguage] || 'en';
+    
+    // Using LibreTranslate API - completely free and open source
+    const response = await fetch('https://translate.fedilab.app/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: text,
+        source: "en",
+        target: langCode,
+        format: "text",
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Translation API error');
+    }
+    
+    const data = await response.json();
+    return data.translatedText || text;
+  } catch (error) {
+    console.error('Translation error:', error);
+    // Return original text if there was an error
+    return text;
+  }
+};
+
+// Batch translate helper - translate multiple items at once
+export const batchTranslate = async (
+  items: string[], 
+  targetLanguage: string
+): Promise<Record<string, string>> => {
+  // Use a map to track originals and translations
+  const translations: Record<string, string> = {};
+
+  // Skip translation if target language is English
+  if (targetLanguage === 'english') {
+    items.forEach(item => {
+      translations[item] = item;
+    });
+    return translations;
+  }
+
+  // Process in smaller batches to avoid overloading the API
+  const BATCH_SIZE = 5;
+  
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = items.slice(i, i + BATCH_SIZE);
+    const promises = batch.map(text => translateText(text, targetLanguage));
+    
+    try {
+      const results = await Promise.all(promises);
+      
+      // Map results back to original items
+      batch.forEach((original, index) => {
+        translations[original] = results[index];
+      });
+      
+      // Small delay between batches to be kind to the API
+      if (i + BATCH_SIZE < items.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    } catch (error) {
+      console.error('Batch translation error:', error);
+      // Add originals as fallback
+      batch.forEach(original => {
+        translations[original] = original;
+      });
+    }
+  }
+  
+  return translations;
+};
+
 // Language Provider component
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Get saved language from localStorage or default to English
@@ -673,6 +766,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLanguage,
     t,
     translations, // Provide translations to the context
+    translateText,
+    batchTranslate
   };
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
