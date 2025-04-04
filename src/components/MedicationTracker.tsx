@@ -293,8 +293,8 @@ const MedicationTracker: React.FC = () => {
       const updatedMedication = await response.json();
       
       setMedications(
-        medications.map((med) =>
-          med._id === id ? updatedMedication : med
+        medications.map((m) =>
+          m._id === id ? updatedMedication : m
         )
       );
 
@@ -351,7 +351,7 @@ const MedicationTracker: React.FC = () => {
         throw new Error('Failed to delete medication');
       }
       
-      setMedications(prev => prev.filter((med) => med._id !== medicationToDelete));
+      setMedications(prev => prev.filter((m) => m._id !== medicationToDelete));
       
       toast({
         title: translations.medicationRemoved,
@@ -372,7 +372,7 @@ const MedicationTracker: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in mt-4 md:ml-64">
+    <div className="space-y-6 animate-fade-in mt-4 md:ml-64 px-4">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold">{translations.title}</h2>
         <Dialog open={open} onOpenChange={setOpen}>
