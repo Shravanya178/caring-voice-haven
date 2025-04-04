@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   Pill,
   Brain,
   Phone,
-  Mic,
+  Bot,
   MapPin,
   MessageSquare,
   Video,
@@ -16,6 +16,8 @@ import {
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
 import { useLanguage } from "../context/LanguageContext";
+import { Dialog, DialogContent } from "./ui/dialog";
+import AIAssistant from "./AIAssistant";
 
 interface NavItem {
   path: string;
@@ -27,6 +29,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { toast } = useToast();
   const { language, setLanguage, t } = useLanguage();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
 
   const navItems: NavItem[] = [
     { path: "/", label: t("nav.home"), icon: <Home className="h-7 w-7" /> },
@@ -72,23 +75,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     },
   ];
 
-  const handleVoiceAssistant = () => {
-    toast({
-      title: "Voice Assistant",
-      description: "Voice assistant activated. Please speak your command.",
-      duration: 3000,
-    });
-
-    // This would connect to voice recognition API in a real implementation
-    setTimeout(() => {
-      toast({
-        title: "Listening...",
-        description: "What can I help you with today?",
-        duration: 3000,
-      });
-    }, 1000);
-  };
-
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLanguage(e.target.value as any);
   };
@@ -116,19 +102,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {children}
       </main>
 
-      {/* Voice assistant button */}
+      {/* AI Assistant button */}
       <div className="fixed right-4 bottom-20 md:bottom-24 z-20">
         <Button
-          onClick={handleVoiceAssistant}
+          onClick={() => setIsAIModalOpen(true)}
           size="lg"
           className="rounded-full h-14 w-14 bg-care-secondary hover:bg-care-tertiary shadow-lg"
         >
-          <Mic className="h-6 w-6" />
+          <Bot className="h-6 w-6" />
         </Button>
       </div>
 
+      {/* AI Assistant Modal */}
+      <Dialog open={isAIModalOpen} onOpenChange={setIsAIModalOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0">
+          <AIAssistant />
+        </DialogContent>
+      </Dialog>
+
       {/* Mobile Navigation */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 md:hidden z-30">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10 md:hidden">
         <div className="flex justify-around">
           {navItems.map((item) => (
             <Link

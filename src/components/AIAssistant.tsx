@@ -27,8 +27,8 @@ declare global {
 // Import the Google Generative AI library
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Your API key from Google AI Studio
-const API_KEY = "AIzaSyD-hvzu4f4smOTv5lK-lIERSP3Ljq4SM3I";
+// Your new API key from Google AI Studio
+const API_KEY = "AIzaSyCiodICAounNBFqDkwGfNCaYEdoR970jcg";
 
 interface Message {
   id: string;
@@ -129,11 +129,11 @@ const AIAssistant = () => {
       setInitializationError(null);
       console.log("Initializing Gemini chat...");
 
-      // Initialize the API
+      // Initialize the API with your new API key
       genAIRef.current = new GoogleGenerativeAI(API_KEY);
       console.log("GoogleGenerativeAI initialized");
 
-      // Updated model name - trying both the latest model names
+      // Try to initialize with the latest model first, then fall back to older models if necessary
       try {
         modelRef.current = await genAIRef.current.getGenerativeModel({
           model: "gemini-1.5-pro",
@@ -183,7 +183,6 @@ const AIAssistant = () => {
 
       // Test the model with a simple query to verify it's working
       try {
-        // Skip the getModels call since it's not supported
         const result = await modelRef.current.generateContent(
           "Send a simple ping response to confirm connectivity"
         );
@@ -758,8 +757,8 @@ const AIAssistant = () => {
 
       <div className="mt-4 text-sm text-gray-500 text-center">
         <p>
-          ⚠ This is a demo application. The health assistant provides general
-          information only, not medical advice.
+          ⚠ The health assistant provides general information only, not medical
+          advice.
         </p>
       </div>
     </div>
