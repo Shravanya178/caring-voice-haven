@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Pill, Plus, Check, Clock, Trash2 } from 'lucide-react';
+import { Pill, Plus, Check, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -18,6 +20,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { useToast } from './ui/use-toast';
+import { useLanguage, translateText, batchTranslate } from '../context/LanguageContext';
 
 interface Medication {
   _id?: string;
@@ -30,8 +33,50 @@ interface Medication {
 
 const MedicationTracker: React.FC = () => {
   const { toast } = useToast();
+  const { t, language } = useLanguage();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [medicationToDelete, setMedicationToDelete] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [translations, setTranslations] = useState({
+    title: 'Medication Tracker',
+    addButton: 'Add Medication',
+    dialogTitle: 'Add New Medication',
+    medicationName: 'Medication Name',
+    dosage: 'Dosage',
+    frequency: 'Frequency',
+    time: 'Time',
+    enterMedicationName: 'Enter medication name',
+    enterDosage: 'e.g., 500mg',
+    daily: 'Daily',
+    twiceDaily: 'Twice Daily',
+    weekly: 'Weekly',
+    asNeeded: 'As Needed',
+    addMedicationButton: 'Add Medication',
+    loading: 'Loading medications...',
+    noMedications: 'No medications added yet',
+    addMedicationsMessage: 'Add your medications to keep track of them',
+    medicationAdded: 'Medication Added',
+    medicationAddedDesc: 'has been added to your list.',
+    medicationTaken: 'Medication Taken',
+    medicationUnmarked: 'Medication Unmarked',
+    medicationMarkedAs: 'has been marked as taken',
+    medicationUnmarkedDesc: 'has been unmarked',
+    medicationRemoved: 'Medication Removed',
+    medicationRemovedDesc: 'has been removed from your list.',
+    errorTitle: 'Error',
+    fetchError: 'Failed to fetch medications. Please try again later.',
+    addError: 'Failed to add medication. Please try again later.',
+    updateError: 'Failed to update medication status. Please try again later.',
+    deleteError: 'Failed to delete medication. Please try again later.',
+    missingInfo: 'Missing Information',
+    fillAllFields: 'Please fill in all required fields.',
+    confirmDelete: 'Confirm Delete',
+    confirmDeleteDesc: 'Are you sure you want to delete this medication? This action cannot be undone.',
+    cancel: 'Cancel',
+    delete: 'Delete'
+  });
 
   const [newMedication, setNewMedication] = useState<Omit<Medication, '_id' | 'taken'>>({
     name: '',
@@ -41,6 +86,105 @@ const MedicationTracker: React.FC = () => {
   });
 
   const [open, setOpen] = useState(false);
+
+  // Translate UI elements when language changes
+  useEffect(() => {
+    const translateUI = async () => {
+      if (language === 'english') {
+        setTranslations({
+          title: 'Medication Tracker',
+          addButton: 'Add Medication',
+          dialogTitle: 'Add New Medication',
+          medicationName: 'Medication Name',
+          dosage: 'Dosage',
+          frequency: 'Frequency',
+          time: 'Time',
+          enterMedicationName: 'Enter medication name',
+          enterDosage: 'e.g., 500mg',
+          daily: 'Daily',
+          twiceDaily: 'Twice Daily',
+          weekly: 'Weekly',
+          asNeeded: 'As Needed',
+          addMedicationButton: 'Add Medication',
+          loading: 'Loading medications...',
+          noMedications: 'No medications added yet',
+          addMedicationsMessage: 'Add your medications to keep track of them',
+          medicationAdded: 'Medication Added',
+          medicationAddedDesc: 'has been added to your list.',
+          medicationTaken: 'Medication Taken',
+          medicationUnmarked: 'Medication Unmarked',
+          medicationMarkedAs: 'has been marked as taken',
+          medicationUnmarkedDesc: 'has been unmarked',
+          medicationRemoved: 'Medication Removed',
+          medicationRemovedDesc: 'has been removed from your list.',
+          errorTitle: 'Error',
+          fetchError: 'Failed to fetch medications. Please try again later.',
+          addError: 'Failed to add medication. Please try again later.',
+          updateError: 'Failed to update medication status. Please try again later.',
+          deleteError: 'Failed to delete medication. Please try again later.',
+          missingInfo: 'Missing Information',
+          fillAllFields: 'Please fill in all required fields.',
+          confirmDelete: 'Confirm Delete',
+          confirmDeleteDesc: 'Are you sure you want to delete this medication? This action cannot be undone.',
+          cancel: 'Cancel',
+          delete: 'Delete'
+        });
+        return;
+      }
+
+      try {
+        console.log(`Translating UI to ${language}...`);
+        const keys = Object.keys(translations);
+        const values = Object.values(translations);
+        
+        const translatedValues = await batchTranslate(values, language);
+        
+        const newTranslations = { ...translations };
+        keys.forEach((key, index) => {
+          const originalText = values[index];
+          newTranslations[key] = translatedValues[originalText] || originalText;
+        });
+        
+        setTranslations(newTranslations);
+      } catch (error) {
+        console.error('Error translating UI:', error);
+      }
+    };
+
+    translateUI();
+  }, [language]);
+
+  // Translate medication names and other details
+  useEffect(() => {
+    const translateMedications = async () => {
+      if (language === 'english' || medications.length === 0) return;
+      
+      try {
+        const names = medications.map(med => med.name);
+        const frequencies = [...new Set(medications.map(med => med.frequency))];
+        const dosages = medications.map(med => med.dosage);
+        
+        const textsToTranslate = [...names, ...frequencies, ...dosages];
+        const translatedTexts = await batchTranslate(textsToTranslate, language);
+        
+        // Create new medications array with translated values
+        const translatedMedications = medications.map(med => {
+          return {
+            ...med,
+            name: translatedTexts[med.name] || med.name,
+            frequency: translatedTexts[med.frequency] || med.frequency,
+            dosage: translatedTexts[med.dosage] || med.dosage
+          };
+        });
+        
+        setMedications(translatedMedications);
+      } catch (error) {
+        console.error('Error translating medications:', error);
+      }
+    };
+    
+    translateMedications();
+  }, [medications, language]);
 
   useEffect(() => {
     fetchMedications();
@@ -62,8 +206,8 @@ const MedicationTracker: React.FC = () => {
     } catch (error) {
       console.error('Error fetching medications:', error);
       toast({
-        title: "Error",
-        description: "Failed to fetch medications. Please try again later.",
+        title: translations.errorTitle,
+        description: translations.fetchError,
         variant: "destructive",
       });
     } finally {
@@ -74,8 +218,8 @@ const MedicationTracker: React.FC = () => {
   const handleAdd = async () => {
     if (!newMedication.name || !newMedication.time) {
       toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields.',
+        title: translations.missingInfo,
+        description: translations.fillAllFields,
         variant: 'destructive',
       });
       return;
@@ -111,14 +255,14 @@ const MedicationTracker: React.FC = () => {
       setOpen(false);
 
       toast({
-        title: 'Medication Added',
-        description: `${newMedication.name} has been added to your list.`,
+        title: translations.medicationAdded,
+        description: `${newMedication.name} ${translations.medicationAddedDesc}`,
       });
     } catch (error) {
       console.error('Error adding medication:', error);
       toast({
-        title: "Error",
-        description: "Failed to add medication. Please try again later.",
+        title: translations.errorTitle,
+        description: translations.addError,
         variant: "destructive",
       });
     }
@@ -155,89 +299,117 @@ const MedicationTracker: React.FC = () => {
       );
 
       toast({
-        title: updatedTaken ? 'Medication Taken' : 'Medication Unmarked',
-        description: `${med.name} has been ${
-          updatedTaken ? 'marked as taken' : 'unmarked'
-        }.`,
+        title: updatedTaken ? translations.medicationTaken : translations.medicationUnmarked,
+        description: `${med.name} ${
+          updatedTaken ? translations.medicationMarkedAs : translations.medicationUnmarkedDesc
+        }`,
       });
     } catch (error) {
       console.error('Error updating medication:', error);
       toast({
-        title: "Error",
-        description: "Failed to update medication status. Please try again later.",
+        title: translations.errorTitle,
+        description: translations.updateError,
         variant: "destructive",
       });
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const confirmDelete = (id: string) => {
+    const med = medications.find((m) => m._id === id);
+    if (!med) return;
+    
+    setMedicationToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const cancelDelete = () => {
+    setMedicationToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDelete = async () => {
+    if (!medicationToDelete) return;
+    
+    setIsDeleting(true);
+    
     try {
-      const med = medications.find((m) => m._id === id);
-      if (!med) return;
+      const med = medications.find((m) => m._id === medicationToDelete);
+      if (!med) {
+        setIsDeleting(false);
+        return;
+      }
       
-      const response = await fetch(`http://localhost:5000/api/medications/${id}`, {
+      console.log(`Deleting medication: ${medicationToDelete}`);
+      
+      const response = await fetch(`http://localhost:5000/api/medications/${medicationToDelete}`, {
         method: 'DELETE',
       });
 
+      console.log(`Delete response status: ${response.status}`);
+      
       if (!response.ok) {
         throw new Error('Failed to delete medication');
       }
       
-      setMedications(medications.filter((med) => med._id !== id));
+      setMedications(prev => prev.filter((med) => med._id !== medicationToDelete));
       
       toast({
-        title: 'Medication Removed',
-        description: `${med.name} has been removed from your list.`,
+        title: translations.medicationRemoved,
+        description: `${med.name} ${translations.medicationRemovedDesc}`,
       });
     } catch (error) {
       console.error('Error deleting medication:', error);
       toast({
-        title: "Error",
-        description: "Failed to delete medication. Please try again later.",
+        title: translations.errorTitle,
+        description: translations.deleteError,
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setMedicationToDelete(null);
     }
   };
 
   return (
     <div className="space-y-6 animate-fade-in mt-4 md:ml-64">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Medication Tracker</h2>
+        <h2 className="text-3xl font-bold">{translations.title}</h2>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="bg-care-primary hover:bg-care-secondary">
-              <Plus className="mr-2 h-4 w-4" /> Add Medication
+              <Plus className="mr-2 h-4 w-4" /> {translations.addButton}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Medication</DialogTitle>
+              <DialogTitle>{translations.dialogTitle}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Medication Name</Label>
+                <Label htmlFor="name">{translations.medicationName}</Label>
                 <Input
                   id="name"
                   value={newMedication.name}
                   onChange={(e) =>
                     setNewMedication({ ...newMedication, name: e.target.value })
                   }
-                  placeholder="Enter medication name"
+                  placeholder={translations.enterMedicationName}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="dosage">Dosage</Label>
+                <Label htmlFor="dosage">{translations.dosage}</Label>
                 <Input
                   id="dosage"
                   value={newMedication.dosage}
                   onChange={(e) =>
                     setNewMedication({ ...newMedication, dosage: e.target.value })
                   }
-                  placeholder="e.g., 500mg"
+                  placeholder={translations.enterDosage}
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="frequency">Frequency</Label>
+                <Label htmlFor="frequency">{translations.frequency}</Label>
                 <Select
                   value={newMedication.frequency}
                   onValueChange={(value) =>
@@ -245,18 +417,18 @@ const MedicationTracker: React.FC = () => {
                   }
                 >
                   <SelectTrigger id="frequency">
-                    <SelectValue placeholder="Select frequency" />
+                    <SelectValue placeholder={translations.frequency} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Daily">Daily</SelectItem>
-                    <SelectItem value="Twice Daily">Twice Daily</SelectItem>
-                    <SelectItem value="Weekly">Weekly</SelectItem>
-                    <SelectItem value="As Needed">As Needed</SelectItem>
+                    <SelectItem value="Daily">{translations.daily}</SelectItem>
+                    <SelectItem value="Twice Daily">{translations.twiceDaily}</SelectItem>
+                    <SelectItem value="Weekly">{translations.weekly}</SelectItem>
+                    <SelectItem value="As Needed">{translations.asNeeded}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">{translations.time}</Label>
                 <Input
                   id="time"
                   type="time"
@@ -268,7 +440,7 @@ const MedicationTracker: React.FC = () => {
               </div>
             </div>
             <Button onClick={handleAdd} className="bg-care-primary hover:bg-care-secondary">
-              Add Medication
+              {translations.addMedicationButton}
             </Button>
           </DialogContent>
         </Dialog>
@@ -277,16 +449,16 @@ const MedicationTracker: React.FC = () => {
       <div className="grid gap-4">
         {loading ? (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Loading medications...</p>
+            <p className="text-gray-500">{translations.loading}</p>
           </div>
         ) : medications.length === 0 ? (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
             <Pill className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-xl font-medium text-gray-600 mb-2">
-              No medications added yet
+              {translations.noMedications}
             </h3>
             <p className="text-gray-500">
-              Add your medications to keep track of them
+              {translations.addMedicationsMessage}
             </p>
           </div>
         ) : (
@@ -331,7 +503,7 @@ const MedicationTracker: React.FC = () => {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => handleDelete(med._id!)}
+                  onClick={() => confirmDelete(med._id!)}
                   className="text-gray-500"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -341,6 +513,35 @@ const MedicationTracker: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              {translations.confirmDelete}
+            </DialogTitle>
+            <DialogDescription>
+              {translations.confirmDeleteDesc}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end mt-4">
+            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+              {translations.cancel}
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="flex items-center gap-2"
+            >
+              {isDeleting && <span className="animate-spin">⟳</span>}
+              {translations.delete}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
