@@ -1,17 +1,16 @@
-
-import React, { useState } from 'react';
-import { Phone, Plus, Trash2, Heart } from 'lucide-react';
-import { Button } from './ui/button';
+import React, { useState, useEffect } from "react";
+import { Phone, Plus, Trash2, Heart } from "lucide-react";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './ui/dialog';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { useToast } from './ui/use-toast';
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { useToast } from "./ui/use-toast";
 
 interface Contact {
   id: string;
@@ -20,74 +19,131 @@ interface Contact {
   phone: string;
 }
 
+// This should be your server URL where your Express app is running
+const SERVER_URL = "http://localhost:5000";
+
 const EmergencyContacts: React.FC = () => {
   const { toast } = useToast();
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      relation: 'Son',
-      phone: '(555) 123-4567',
-    },
-    {
-      id: '2',
-      name: 'Mary Johnson',
-      relation: 'Daughter',
-      phone: '(555) 987-6543',
-    },
-    {
-      id: '3',
-      name: 'Dr. Wilson',
-      relation: 'Doctor',
-      phone: '(555) 246-8101',
-    },
-  ]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [newContact, setNewContact] = useState<Omit<Contact, 'id'>>({
-    name: '',
-    relation: '',
-    phone: '',
+  const [newContact, setNewContact] = useState<Omit<Contact, "id">>({
+    name: "",
+    relation: "",
+    phone: "",
   });
 
   const [open, setOpen] = useState(false);
 
-  const handleAdd = () => {
+  // Fetch contacts from server when component mounts
+  useEffect(() => {
+    fetchContacts();
+  }, []);
+
+  const fetchContacts = async () => {
+    try {
+      const response = await fetch(`${SERVER_URL}/api/emergency-contacts`);
+      const data = await response.json();
+
+      // Transform database objects to match our Contact interface
+      const formattedContacts = data.map((contact: any) => ({
+        id: contact._id,
+        name: contact.name,
+        relation: contact.relation || "",
+        phone: contact.phone,
+      }));
+
+      setContacts(formattedContacts);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load contacts from server",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdd = async () => {
     if (!newContact.name || !newContact.phone) {
       toast({
-        title: 'Missing Information',
-        description: 'Please fill in all required fields.',
-        variant: 'destructive',
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
       });
       return;
     }
 
-    const contact: Contact = {
-      ...newContact,
-      id: Date.now().toString(),
-    };
+    try {
+      // Save contact to database
+      const response = await fetch(`${SERVER_URL}/api/emergency-contacts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newContact),
+      });
 
-    setContacts([...contacts, contact]);
-    setNewContact({
-      name: '',
-      relation: '',
-      phone: '',
-    });
-    setOpen(false);
+      const savedContact = await response.json();
 
-    toast({
-      title: 'Contact Added',
-      description: `${newContact.name} has been added to your emergency contacts.`,
-    });
+      // Add the new contact to our state
+      setContacts([
+        ...contacts,
+        {
+          id: savedContact._id,
+          name: savedContact.name,
+          relation: savedContact.relation || "",
+          phone: savedContact.phone,
+        },
+      ]);
+
+      setNewContact({
+        name: "",
+        relation: "",
+        phone: "",
+      });
+      setOpen(false);
+
+      toast({
+        title: "Contact Added",
+        description: `${newContact.name} has been added to your emergency contacts.`,
+      });
+    } catch (error) {
+      console.error("Error adding contact:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save contact to server",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const contact = contacts.find((c) => c.id === id);
-    setContacts(contacts.filter((contact) => contact.id !== id));
-    
-    if (contact) {
+
+    try {
+      // Delete from database
+      await fetch(`${SERVER_URL}/api/emergency-contacts/${id}`, {
+        method: "DELETE",
+      });
+
+      // Update local state
+      setContacts(contacts.filter((contact) => contact.id !== id));
+
+      if (contact) {
+        toast({
+          title: "Contact Removed",
+          description: `${contact.name} has been removed from your contacts.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting contact:", error);
       toast({
-        title: 'Contact Removed',
-        description: `${contact.name} has been removed from your contacts.`,
+        title: "Error",
+        description: "Failed to delete contact from server",
+        variant: "destructive",
       });
     }
   };
@@ -100,6 +156,7 @@ const EmergencyContacts: React.FC = () => {
     // In a real app, this would use device capabilities to make a call
   };
 
+  // The rest of your component remains the same
   return (
     <div className="space-y-6 animate-fade-in mt-4 md:ml-64">
       <div className="flex justify-between items-center">
@@ -152,7 +209,10 @@ const EmergencyContacts: React.FC = () => {
                 />
               </div>
             </div>
-            <Button onClick={handleAdd} className="bg-care-primary hover:bg-care-secondary">
+            <Button
+              onClick={handleAdd}
+              className="bg-care-primary hover:bg-care-secondary"
+            >
               Add Contact
             </Button>
           </DialogContent>
@@ -165,12 +225,11 @@ const EmergencyContacts: React.FC = () => {
             <Heart className="h-5 w-5 text-red-500" />
           </div>
           <div className="ml-3">
-            <h3 className="text-lg font-medium text-red-800">
-              Emergency Help
-            </h3>
+            <h3 className="text-lg font-medium text-red-800">Emergency Help</h3>
             <div className="mt-2 text-red-700">
               <p>
-                In case of a medical emergency, tap the button below to call emergency services.
+                In case of a medical emergency, tap the button below to call
+                services.
               </p>
             </div>
             <div className="mt-4">
@@ -184,7 +243,7 @@ const EmergencyContacts: React.FC = () => {
                   });
                 }}
               >
-                <Phone className="mr-2 h-4 w-4" /> Call 911
+                <Phone className="mr-2 h-4 w-4" /> Call 112
               </Button>
             </div>
           </div>
@@ -192,7 +251,11 @@ const EmergencyContacts: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        {contacts.length === 0 ? (
+        {loading ? (
+          <div className="text-center p-8">
+            <p>Loading contacts...</p>
+          </div>
+        ) : contacts.length === 0 ? (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
             <Phone className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-xl font-medium text-gray-600 mb-2">
