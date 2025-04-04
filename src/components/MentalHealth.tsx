@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Heart, FileText, ArrowRight, Bookmark, ExternalLink, AlertTriangle, Info, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';

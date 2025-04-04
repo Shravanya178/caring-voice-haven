@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Pill, Plus, Check, Clock, Trash2 } from 'lucide-react';
+import { Pill, Plus, Check, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Dialog,
@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -18,6 +20,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { useToast } from './ui/use-toast';
+import { API_URL } from '../config/api.config';
 
 interface Medication {
   _id?: string;
@@ -32,6 +35,9 @@ const MedicationTracker: React.FC = () => {
   const { toast } = useToast();
   const [medications, setMedications] = useState<Medication[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [medicationToDelete, setMedicationToDelete] = useState<Medication | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
   const [newMedication, setNewMedication] = useState<Omit<Medication, '_id' | 'taken'>>({
     name: '',
@@ -50,10 +56,11 @@ const MedicationTracker: React.FC = () => {
     try {
       setLoading(true);
       console.log('Fetching medications from server...');
-      const response = await fetch('http://localhost:5000/api/medications');
+      
+      const response = await fetch(`${API_URL}/api/medications`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch medications');
+        throw new Error(`Failed to fetch medications: ${response.status}`);
       }
       
       const data = await response.json();
@@ -63,7 +70,7 @@ const MedicationTracker: React.FC = () => {
       console.error('Error fetching medications:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch medications. Please try again later.",
+        description: "Failed to fetch medications. Please check server connection.",
         variant: "destructive",
       });
     } finally {
@@ -83,19 +90,28 @@ const MedicationTracker: React.FC = () => {
 
     try {
       console.log('Sending medication data:', newMedication);
-      const response = await fetch('http://localhost:5000/api/medications', {
+      
+      const medicationData = {
+        ...newMedication,
+        taken: false,
+      };
+      
+      console.log('Final medication payload:', medicationData);
+      
+      const response = await fetch(`${API_URL}/api/medications`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...newMedication,
-          taken: false,
-        }),
+        body: JSON.stringify(medicationData),
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to add medication');
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error(`Failed to add medication: ${response.status} - ${errorData}`);
       }
 
       const savedMedication = await response.json();
@@ -114,11 +130,14 @@ const MedicationTracker: React.FC = () => {
         title: 'Medication Added',
         description: `${newMedication.name} has been added to your list.`,
       });
+      
+      // Refresh the medication list to ensure we have the latest data
+      fetchMedications();
     } catch (error) {
       console.error('Error adding medication:', error);
       toast({
         title: "Error",
-        description: "Failed to add medication. Please try again later.",
+        description: "Failed to add medication. Please try again.",
         variant: "destructive",
       });
     }
@@ -131,7 +150,7 @@ const MedicationTracker: React.FC = () => {
       
       const updatedTaken = !med.taken;
       
-      const response = await fetch(`http://localhost:5000/api/medications/${id}`, {
+      const response = await fetch(`${API_URL}/api/medications/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +183,7 @@ const MedicationTracker: React.FC = () => {
       console.error('Error updating medication:', error);
       toast({
         title: "Error",
-        description: "Failed to update medication status. Please try again later.",
+        description: "Failed to update medication status.",
         variant: "destructive",
       });
     }
@@ -172,31 +191,63 @@ const MedicationTracker: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const med = medications.find((m) => m._id === id);
-      if (!med) return;
+      setIsDeleting(true);
       
-      const response = await fetch(`http://localhost:5000/api/medications/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete medication');
+      const med = medications.find((m) => m._id === id);
+      if (!med) {
+        setIsDeleting(false);
+        return;
       }
       
-      setMedications(medications.filter((med) => med._id !== id));
+      console.log('Deleting medication with ID:', id);
+      
+      // First delete from the database
+      const response = await fetch(`${API_URL}/api/medications/${id}`, {
+        method: 'DELETE',
+      });
+      
+      console.log('Delete response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Error response:', errorData);
+        throw new Error(`Failed to delete medication: ${response.status} - ${errorData}`);
+      }
+      
+      // Then update the UI if database deletion was successful
+      setMedications(prevMeds => prevMeds.filter((m) => m._id !== id));
+      
+      console.log('Medication successfully deleted from database and UI');
       
       toast({
         title: 'Medication Removed',
         description: `${med.name} has been removed from your list.`,
       });
+      
+      // Close the dialog and reset state
+      setDeleteDialogOpen(false);
+      setMedicationToDelete(null);
     } catch (error) {
       console.error('Error deleting medication:', error);
       toast({
         title: "Error",
-        description: "Failed to delete medication. Please try again later.",
+        description: "Failed to delete medication. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const confirmDelete = () => {
+    if (medicationToDelete?._id) {
+      handleDelete(medicationToDelete._id);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setMedicationToDelete(null);
   };
 
   return (
@@ -267,80 +318,116 @@ const MedicationTracker: React.FC = () => {
                 />
               </div>
             </div>
-            <Button onClick={handleAdd} className="bg-care-primary hover:bg-care-secondary">
-              Add Medication
-            </Button>
+            <div className="flex justify-end">
+              <Button onClick={handleAdd}>Add Medication</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {loading ? (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Loading medications...</p>
-          </div>
-        ) : medications.length === 0 ? (
-          <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <Pill className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-xl font-medium text-gray-600 mb-2">
-              No medications added yet
-            </h3>
-            <p className="text-gray-500">
-              Add your medications to keep track of them
-            </p>
-          </div>
-        ) : (
-          medications.map((med) => (
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-care-primary"></div>
+        </div>
+      ) : medications.length === 0 ? (
+        <div className="text-center py-12">
+          <Pill className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-4 text-lg font-semibold">No medications added</h3>
+          <p className="text-gray-500">Add your first medication to start tracking</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {medications.map((med) => (
             <div
               key={med._id}
-              className={`bg-white rounded-lg p-4 shadow border-l-4 ${
-                med.taken ? 'border-green-500' : 'border-care-primary'
-              } flex justify-between items-center`}
+              className={`p-4 rounded-lg shadow-md transition-all duration-200 ${
+                med.taken
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-white border border-gray-200'
+              }`}
             >
-              <div className="flex items-center space-x-4">
-                <div
-                  className={`p-2 rounded-full ${
-                    med.taken ? 'bg-green-100' : 'bg-care-light'
-                  }`}
-                >
-                  {med.taken ? (
-                    <Check className="h-6 w-6 text-green-500" />
-                  ) : (
-                    <Pill className="h-6 w-6 text-care-primary" />
-                  )}
-                </div>
+              <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="font-semibold text-lg">{med.name}</h3>
-                  <div className="text-gray-600 text-sm md:text-base">
-                    {med.dosage} • {med.frequency}
-                  </div>
-                  <div className="flex items-center text-gray-500 text-sm md:text-base">
-                    <Clock className="h-3 w-3 mr-1" /> {med.time}
-                  </div>
+                  <p className="text-gray-600 text-sm">{med.dosage}</p>
                 </div>
-              </div>
-              <div className="flex space-x-2">
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  onClick={() => handleTaken(med._id!)}
-                  className={med.taken ? 'text-green-500' : 'text-care-primary'}
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleDelete(med._id!)}
-                  className="text-gray-500"
+                  onClick={() => {
+                    setMedicationToDelete(med);
+                    setDeleteDialogOpen(true);
+                  }}
+                  className="text-gray-500 hover:text-red-500"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+                <Clock className="h-4 w-4" />
+                <span>{med.time}</span>
+                <span className="mx-1">•</span>
+                <span>{med.frequency}</span>
+              </div>
+              <Button
+                variant={med.taken ? "outline" : "default"}
+                className={`w-full ${
+                  med.taken
+                    ? 'border-green-500 text-green-600 hover:bg-green-50'
+                    : 'bg-care-primary hover:bg-care-secondary'
+                }`}
+                onClick={() => handleTaken(med._id!)}
+              >
+                {med.taken ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" /> Taken
+                  </>
+                ) : (
+                  'Mark as Taken'
+                )}
+              </Button>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{medicationToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button variant="outline" onClick={cancelDelete} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete} 
+              disabled={isDeleting}
+              className="gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Medication
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

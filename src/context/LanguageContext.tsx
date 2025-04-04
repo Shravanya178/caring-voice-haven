@@ -207,13 +207,13 @@ const translations: Translations = {
   // AI Assistant Component
   'aiassistant.title': {
     english: 'AI Health Assistant',
-    hindi: 'एआई स्वास्थ्य सहायक',
-    marathi: 'एआय आरोग्य सहाय्यक',
+    hindi: 'AI स्वास्थ्य सहायक',
+    marathi: 'AI आरोग्य सहाय्यक',
   },
   'aiassistant.welcome': {
-    english: "Hello! I'm your AI health assistant. I can help you with medication information, health tips, or answer questions about senior care. How can I assist you today?",
-    hindi: "नमस्ते! मैं आपका एआई स्वास्थ्य सहायक हूं। मैं आपको दवा की जानकारी, स्वास्थ्य सुझाव, या वरिष्ठ देखभाल के बारे में प्रश्नों के उत्तर देने में मदद कर सकता हूं। मैं आज आपकी कैसे सहायता कर सकता हूं?",
-    marathi: "नमस्कार! मी तुमचा एआय आरोग्य सहाय्यक आहे. मी तुम्हाला औषधांची माहिती, आरोग्य टिप्स किंवा ज्येष्ठ नागरिकांच्या काळजीबद्दल प्रश्नांची उत्तरे देण्यास मदत करू शकतो. मी आज तुमची कशी मदत करू शकतो?",
+    english: 'Welcome! How can I help you today?',
+    hindi: 'स्वागत है! आज मैं आपकी कैसे मदद कर सकता हूं?',
+    marathi: 'स्वागत आहे! आज मी तुमची कशी मदत करू शकतो?'
   },
   'aiassistant.placeholder': {
     english: 'Type your message...',
@@ -274,6 +274,21 @@ const translations: Translations = {
     english: 'Could not recognize your voice. Please try again or type your question.',
     hindi: 'आपकी आवाज को पहचान नहीं सका। कृपया पुन: प्रयास करें या अपना प्रश्न टाइप करें।',
     marathi: 'तुमचा आवाज ओळखू शकलो नाही. कृपया पुन्हा प्रयत्न करा किंवा तुमचा प्रश्न टाइप करा.',
+  },
+  'aiassistant.response': {
+    english: 'This is a mock response since the AI service is currently unavailable.',
+    hindi: 'यह एक मॉक प्रतिक्रिया है क्योंकि AI सेवा वर्तमान में अनुपलब्ध है।',
+    marathi: 'AI सेवा सध्या उपलब्ध नसल्याने ही एक नकली प्रतिसाद आहे.'
+  },
+  'aiassistant.input_placeholder': {
+    english: 'Type your message here...',
+    hindi: 'अपना संदेश यहां टाइप करें...',
+    marathi: 'तुमचा संदेश येथे टाइप करा...'
+  },
+  'aiassistant.send': {
+    english: 'Send',
+    hindi: 'भेजें',
+    marathi: 'पाठवा'
   },
   
   // TelemedicineConsult Component
@@ -613,7 +628,7 @@ const translations: Translations = {
   },
   'language.english': {
     english: 'English',
-    hindi: 'अंग्रेज़ी',
+    hindi: 'अंग्रे़ी',
     marathi: 'इंग्रजी',
   },
   'language.hindi': {
