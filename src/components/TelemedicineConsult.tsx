@@ -97,18 +97,16 @@ const TelemedicineConsult = () => {
     try {
       // Create a new appointment object
       const newAppointment = {
-        _id: Date.now().toString(), // Generate a unique ID
         doctorId: selectedDoctor,
         doctorName: doctor?.name || '',
         date: appointmentDate,
         time: appointmentTime,
         status: 'scheduled' as const,
+        // Add userId for MongoDB storage
+        userId: "default-user"
       };
       
-      // Add to local state immediately for instant UI update
-      setAppointments(prev => [newAppointment, ...prev]);
-      
-      // Then send to server
+      // Send to server first before updating UI
       const response = await fetch('http://localhost:5000/api/appointments', {
         method: 'POST',
         headers: {
@@ -121,15 +119,11 @@ const TelemedicineConsult = () => {
         throw new Error('Failed to schedule appointment');
       }
 
-      // Get the server response with proper ID
+      // Get the server response with proper MongoDB ID
       const savedAppointment = await response.json();
       
-      // Update the appointment in state with the server-generated ID
-      setAppointments(prev => 
-        prev.map(apt => 
-          apt._id === newAppointment._id ? savedAppointment : apt
-        )
-      );
+      // Use the server-saved appointment (with MongoDB _id) in the UI
+      setAppointments(prev => [savedAppointment, ...prev]);
 
       toast({
         title: translations['telemedicine.appointment.scheduled'][language],
@@ -145,6 +139,7 @@ const TelemedicineConsult = () => {
       toast({
         title: translations['telemedicine.error'][language],
         description: translations['telemedicine.error.desc'][language],
+        variant: "destructive",
       });
     }
   };
@@ -162,15 +157,7 @@ const TelemedicineConsult = () => {
 
   const handleDeleteAppointment = async (appointmentId: string) => {
     try {
-      // Optimistically remove from UI first
-      setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
-      
-      toast({
-        title: translations['telemedicine.appointment.cancelled'][language],
-        description: translations['telemedicine.appointment.cancelled.desc'][language],
-      });
-      
-      // Then send delete request to server
+      // Delete from server first
       const response = await fetch(`http://localhost:5000/api/appointments/${appointmentId}`, {
         method: 'DELETE',
       });
@@ -178,12 +165,19 @@ const TelemedicineConsult = () => {
       if (!response.ok) {
         throw new Error('Failed to delete appointment from server');
       }
+      
+      // Then update UI
+      setAppointments(prev => prev.filter(apt => apt._id !== appointmentId));
+      
+      toast({
+        title: translations['telemedicine.appointment.cancelled'][language],
+        description: translations['telemedicine.appointment.cancelled.desc'][language],
+      });
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      
       // No need to show an error toast since the UI already shows it as deleted
       // and we don't want to confuse the user
-      console.log('Appointment was deleted from UI but server delete failed');
+      console.log('Failed to delete appointment from server:', error);
     }
   };
 
